@@ -116,6 +116,9 @@ def get_hotel_data():
     marne_nights_total_url = f"https://bdm.insee.fr/series/010599245/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
     marne_nights_residents_url = f"https://bdm.insee.fr/series/010599246/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
     marne_nights_nonresidents_url = f"https://bdm.insee.fr/series/010599247/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
+    france_nights_total_url = f"https://bdm.insee.fr/series/010598614/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
+    france_nights_residents_url = f"https://bdm.insee.fr/series/010598615/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
+    france_nights_nonresidents_url = f"https://bdm.insee.fr/series/010598616/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
 
     marne_data = load_insee_data(marne_url, "Marne")
     time.sleep(1)  # Delay between requests
@@ -133,8 +136,17 @@ def get_hotel_data():
     time.sleep(1)  # Delay between requests
 
     marne_nights_nonresidents_data = load_insee_data(marne_nights_nonresidents_url, "Marne Nights NonResidents")
+    time.sleep(1)  # Delay between requests
 
-    return marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data
+    france_nights_total_data = load_insee_data(france_nights_total_url, "France Nights Total")
+    time.sleep(1)  # Delay between requests
+
+    france_nights_residents_data = load_insee_data(france_nights_residents_url, "France Nights Residents")
+    time.sleep(1)  # Delay between requests
+
+    france_nights_nonresidents_data = load_insee_data(france_nights_nonresidents_url, "France Nights NonResidents")
+
+    return marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data, france_nights_total_data, france_nights_residents_data, france_nights_nonresidents_data
 
 def process_data(df):
     """Process and clean the data - data is already processed in load_insee_data"""
@@ -150,9 +162,9 @@ def main():
 
     # Load data
     with st.spinner("Loading hotel frequency data..."):
-        marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data = get_hotel_data()
+        marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data, france_nights_total_data, france_nights_residents_data, france_nights_nonresidents_data = get_hotel_data()
 
-    if all(data is None for data in [marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data]):
+    if all(data is None for data in [marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data, france_nights_total_data, france_nights_residents_data, france_nights_nonresidents_data]):
         st.error("Failed to load data from all sources. Please check the URLs and try again.")
         return
 
@@ -186,6 +198,21 @@ def main():
         marne_nights_nonresidents_processed = process_data(marne_nights_nonresidents_data)
     else:
         marne_nights_nonresidents_processed = None
+
+    if france_nights_total_data is not None:
+        france_nights_total_processed = process_data(france_nights_total_data)
+    else:
+        france_nights_total_processed = None
+
+    if france_nights_residents_data is not None:
+        france_nights_residents_processed = process_data(france_nights_residents_data)
+    else:
+        france_nights_residents_processed = None
+
+    if france_nights_nonresidents_data is not None:
+        france_nights_nonresidents_processed = process_data(france_nights_nonresidents_data)
+    else:
+        france_nights_nonresidents_processed = None
 
     # Sidebar for controls
     st.sidebar.header("Dashboard Controls")
@@ -423,7 +450,7 @@ def main():
                 if analysis_type == "Hotel Nights":
                     data_source = marne_nights_total_processed
                     value_col = 'Hotel_Nights'
-                    y_label = 'Hotel Nights'
+                    y_label = 'Hotel Nights (thousands)'
                     region_name = "Marne"
                 else:
                     data_source = marne_processed
@@ -491,7 +518,10 @@ def main():
         with col2:
             if "France" in selected_regions:
                 if analysis_type == "Hotel Nights":
-                    st.info("Hotel Nights data only available for Marne region")
+                    data_source = france_nights_total_processed
+                    value_col = 'Hotel_Nights'
+                    y_label = 'Hotel Nights (thousands)'
+                    region_name = "France"
                 else:
                     data_source = france_processed
                     value_col = 'Occupancy_Rate'
@@ -563,38 +593,129 @@ def main():
                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
         if analysis_type == "Hotel Nights":
-            # Use Marne hotel nights data
-            if marne_nights_total_processed is not None and "Marne" in selected_regions:
-                # Add month and year columns for analysis
-                marne_analysis = marne_nights_total_processed.copy()
-                marne_analysis['Month'] = marne_analysis['Date'].dt.month
-                marne_analysis['Year'] = marne_analysis['Date'].dt.year
+            # Use hotel nights data for both regions
+            if ((marne_nights_total_processed is not None and "Marne" in selected_regions) or
+                (france_nights_total_processed is not None and "France" in selected_regions)):
 
-                # Group by month and get all years
-                monthly_data = marne_analysis.groupby(['Month', 'Year'])['Hotel_Nights'].mean().reset_index()
+                # If both regions are selected, create side-by-side charts
+                if ("Marne" in selected_regions and marne_nights_total_processed is not None and
+                    "France" in selected_regions and france_nights_total_processed is not None):
 
-                fig = go.Figure()
-                for month in range(1, 13):
-                    month_data = monthly_data[monthly_data['Month'] == month]['Hotel_Nights']
-                    if len(month_data) > 0:
-                        fig.add_trace(go.Box(
-                            y=month_data,
-                            name=months[month-1],
-                            boxmean=True,
-                            marker_color='#2E86AB',
-                            showlegend=False
-                        ))
+                    col1, col2 = st.columns(2)
 
-                fig.update_layout(
-                    title="Marne - Monthly Hotel Nights Distribution",
-                    xaxis_title="",
-                    yaxis_title="Hotel Nights",
-                    height=320,
-                    margin=dict(t=50, b=40, l=40, r=40)
-                )
-                st.plotly_chart(fig, width='stretch')
+                    with col1:
+                        # Marne analysis
+                        marne_analysis = marne_nights_total_processed.copy()
+                        marne_analysis['Month'] = marne_analysis['Date'].dt.month
+                        marne_analysis['Year'] = marne_analysis['Date'].dt.year
+                        monthly_marne = marne_analysis.groupby(['Month', 'Year'])['Hotel_Nights'].mean().reset_index()
+
+                        fig = go.Figure()
+                        for month in range(1, 13):
+                            month_data = monthly_marne[monthly_marne['Month'] == month]['Hotel_Nights']
+                            if len(month_data) > 0:
+                                fig.add_trace(go.Box(
+                                    y=month_data,
+                                    name=months[month-1],
+                                    boxmean=True,
+                                    marker_color='#1f77b4',
+                                    showlegend=False
+                                ))
+
+                        fig.update_layout(
+                            title="Marne - Monthly Hotel Nights Distribution",
+                            xaxis_title="",
+                            yaxis_title="Hotel Nights (thousands)",
+                            height=320,
+                            margin=dict(t=50, b=40, l=40, r=40)
+                        )
+                        st.plotly_chart(fig, width='stretch')
+
+                    with col2:
+                        # France analysis
+                        france_analysis = france_nights_total_processed.copy()
+                        france_analysis['Month'] = france_analysis['Date'].dt.month
+                        france_analysis['Year'] = france_analysis['Date'].dt.year
+                        monthly_france = france_analysis.groupby(['Month', 'Year'])['Hotel_Nights'].mean().reset_index()
+
+                        fig2 = go.Figure()
+                        for month in range(1, 13):
+                            month_data = monthly_france[monthly_france['Month'] == month]['Hotel_Nights']
+                            if len(month_data) > 0:
+                                fig2.add_trace(go.Box(
+                                    y=month_data,
+                                    name=months[month-1],
+                                    boxmean=True,
+                                    marker_color='#ff7f0e',
+                                    showlegend=False
+                                ))
+
+                        fig2.update_layout(
+                            title="France - Monthly Hotel Nights Distribution",
+                            xaxis_title="",
+                            yaxis_title="Hotel Nights (thousands)",
+                            height=320,
+                            margin=dict(t=50, b=40, l=40, r=40)
+                        )
+                        st.plotly_chart(fig2, width='stretch')
+
+                elif "Marne" in selected_regions and marne_nights_total_processed is not None:
+                    # Only Marne
+                    marne_analysis = marne_nights_total_processed.copy()
+                    marne_analysis['Month'] = marne_analysis['Date'].dt.month
+                    marne_analysis['Year'] = marne_analysis['Date'].dt.year
+                    monthly_data = marne_analysis.groupby(['Month', 'Year'])['Hotel_Nights'].mean().reset_index()
+
+                    fig = go.Figure()
+                    for month in range(1, 13):
+                        month_data = monthly_data[monthly_data['Month'] == month]['Hotel_Nights']
+                        if len(month_data) > 0:
+                            fig.add_trace(go.Box(
+                                y=month_data,
+                                name=months[month-1],
+                                boxmean=True,
+                                marker_color='#1f77b4',
+                                showlegend=False
+                            ))
+
+                    fig.update_layout(
+                        title="Marne - Monthly Hotel Nights Distribution",
+                        xaxis_title="",
+                        yaxis_title="Hotel Nights (thousands)",
+                        height=320,
+                        margin=dict(t=50, b=40, l=40, r=40)
+                    )
+                    st.plotly_chart(fig, width='stretch')
+
+                elif "France" in selected_regions and france_nights_total_processed is not None:
+                    # Only France
+                    france_analysis = france_nights_total_processed.copy()
+                    france_analysis['Month'] = france_analysis['Date'].dt.month
+                    france_analysis['Year'] = france_analysis['Date'].dt.year
+                    monthly_data = france_analysis.groupby(['Month', 'Year'])['Hotel_Nights'].mean().reset_index()
+
+                    fig = go.Figure()
+                    for month in range(1, 13):
+                        month_data = monthly_data[monthly_data['Month'] == month]['Hotel_Nights']
+                        if len(month_data) > 0:
+                            fig.add_trace(go.Box(
+                                y=month_data,
+                                name=months[month-1],
+                                boxmean=True,
+                                marker_color='#ff7f0e',
+                                showlegend=False
+                            ))
+
+                    fig.update_layout(
+                        title="France - Monthly Hotel Nights Distribution",
+                        xaxis_title="",
+                        yaxis_title="Hotel Nights (thousands)",
+                        height=320,
+                        margin=dict(t=50, b=40, l=40, r=40)
+                    )
+                    st.plotly_chart(fig, width='stretch')
             else:
-                st.info("Hotel Nights data only available for Marne region")
+                st.info("Hotel Nights data not available for selected regions")
 
         else:
             # Use occupancy rate data
@@ -712,12 +833,34 @@ def main():
                     st.plotly_chart(fig, width='stretch')
 
     with tab3:
-        st.subheader("Marne Hotel Nights - Monthly Analysis")
+        st.subheader("Hotel Nights Breakdown - Monthly Analysis")
 
-        # Check if we have all three datasets
-        if (marne_nights_total_processed is not None and
-            marne_nights_residents_processed is not None and
-            marne_nights_nonresidents_processed is not None):
+        # Check if we have datasets for Marne or France
+        marne_available = (marne_nights_total_processed is not None and
+                          marne_nights_residents_processed is not None and
+                          marne_nights_nonresidents_processed is not None)
+
+        france_available = (france_nights_total_processed is not None and
+                           france_nights_residents_processed is not None and
+                           france_nights_nonresidents_processed is not None)
+
+        if marne_available and france_available:
+            # Show both regions side by side
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.subheader("Marne Hotel Nights")
+
+            with col2:
+                st.subheader("France Hotel Nights")
+
+        elif marne_available:
+            st.subheader("Marne Hotel Nights")
+
+        elif france_available:
+            st.subheader("France Hotel Nights")
+
+        if marne_available or france_available:
 
             # Main combined chart
             fig = go.Figure()
