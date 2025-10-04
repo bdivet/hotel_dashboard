@@ -860,9 +860,116 @@ def main():
         elif france_available:
             st.subheader("France Hotel Nights")
 
-        if marne_available or france_available:
+        if marne_available and france_available:
+            # Both regions available - show side by side
+            col1, col2 = st.columns(2)
 
-            # Main combined chart
+            with col1:
+                # Marne chart
+                fig = go.Figure()
+
+                # Add stacked bars for non-residents (bottom layer - more stable)
+                fig.add_trace(go.Bar(
+                    x=marne_nights_nonresidents_processed['Date'],
+                    y=marne_nights_nonresidents_processed['Hotel_Nights'],
+                    name='Non-Residents',
+                    marker_color='#F18F01',
+                    hovertemplate='<b>Non-Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
+                    width=86400000 * 20  # Bar width in milliseconds (about 20 days)
+                ))
+
+                # Add stacked bars for residents (top layer)
+                fig.add_trace(go.Bar(
+                    x=marne_nights_residents_processed['Date'],
+                    y=marne_nights_residents_processed['Hotel_Nights'],
+                    name='Residents',
+                    marker_color='#A23B72',
+                    hovertemplate='<b>Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
+                    width=86400000 * 20  # Bar width in milliseconds (about 20 days)
+                ))
+
+                # Add total line
+                fig.add_trace(go.Scatter(
+                    x=marne_nights_total_processed['Date'],
+                    y=marne_nights_total_processed['Hotel_Nights'],
+                    mode='lines',
+                    name='Total',
+                    line=dict(color='#2E86AB', width=3),
+                    hovertemplate='<b>Total</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>'
+                ))
+
+                fig.update_layout(
+                    title="Marne Hotel Nights: Total Line & Stacked Components",
+                    xaxis_title="",
+                    yaxis_title="Hotel Nights (thousands)",
+                    height=400,
+                    margin=dict(t=60, b=40, l=40, r=40),
+                    barmode='stack',
+                    legend=dict(
+                        yanchor="top",
+                        y=0.99,
+                        xanchor="left",
+                        x=0.01
+                    ),
+                    hovermode='x unified'
+                )
+
+                st.plotly_chart(fig, width='stretch')
+
+            with col2:
+                # France chart
+                fig2 = go.Figure()
+
+                # Add stacked bars for non-residents (bottom layer - more stable)
+                fig2.add_trace(go.Bar(
+                    x=france_nights_nonresidents_processed['Date'],
+                    y=france_nights_nonresidents_processed['Hotel_Nights'],
+                    name='Non-Residents',
+                    marker_color='#F18F01',
+                    hovertemplate='<b>Non-Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
+                    width=86400000 * 20  # Bar width in milliseconds (about 20 days)
+                ))
+
+                # Add stacked bars for residents (top layer)
+                fig2.add_trace(go.Bar(
+                    x=france_nights_residents_processed['Date'],
+                    y=france_nights_residents_processed['Hotel_Nights'],
+                    name='Residents',
+                    marker_color='#A23B72',
+                    hovertemplate='<b>Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
+                    width=86400000 * 20  # Bar width in milliseconds (about 20 days)
+                ))
+
+                # Add total line
+                fig2.add_trace(go.Scatter(
+                    x=france_nights_total_processed['Date'],
+                    y=france_nights_total_processed['Hotel_Nights'],
+                    mode='lines',
+                    name='Total',
+                    line=dict(color='#2E86AB', width=3),
+                    hovertemplate='<b>Total</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>'
+                ))
+
+                fig2.update_layout(
+                    title="France Hotel Nights: Total Line & Stacked Components",
+                    xaxis_title="",
+                    yaxis_title="Hotel Nights (thousands)",
+                    height=400,
+                    margin=dict(t=60, b=40, l=40, r=40),
+                    barmode='stack',
+                    legend=dict(
+                        yanchor="top",
+                        y=0.99,
+                        xanchor="left",
+                        x=0.01
+                    ),
+                    hovermode='x unified'
+                )
+
+                st.plotly_chart(fig2, width='stretch')
+
+        elif marne_available:
+            # Only Marne available
             fig = go.Figure()
 
             # Add stacked bars for non-residents (bottom layer - more stable)
@@ -898,7 +1005,7 @@ def main():
             fig.update_layout(
                 title="Marne Hotel Nights: Total Line & Stacked Components",
                 xaxis_title="",
-                yaxis_title="Hotel Nights (x1,000)",
+                yaxis_title="Hotel Nights (thousands)",
                 height=400,
                 margin=dict(t=60, b=40, l=40, r=40),
                 barmode='stack',
@@ -913,7 +1020,93 @@ def main():
 
             st.plotly_chart(fig, width='stretch')
 
-            # Show key metrics
+        elif france_available:
+            # Only France available
+            fig = go.Figure()
+
+            # Add stacked bars for non-residents (bottom layer - more stable)
+            fig.add_trace(go.Bar(
+                x=france_nights_nonresidents_processed['Date'],
+                y=france_nights_nonresidents_processed['Hotel_Nights'],
+                name='Non-Residents',
+                marker_color='#F18F01',
+                hovertemplate='<b>Non-Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
+                width=86400000 * 20  # Bar width in milliseconds (about 20 days)
+            ))
+
+            # Add stacked bars for residents (top layer)
+            fig.add_trace(go.Bar(
+                x=france_nights_residents_processed['Date'],
+                y=france_nights_residents_processed['Hotel_Nights'],
+                name='Residents',
+                marker_color='#A23B72',
+                hovertemplate='<b>Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
+                width=86400000 * 20  # Bar width in milliseconds (about 20 days)
+            ))
+
+            # Add total line
+            fig.add_trace(go.Scatter(
+                x=france_nights_total_processed['Date'],
+                y=france_nights_total_processed['Hotel_Nights'],
+                mode='lines',
+                name='Total',
+                line=dict(color='#2E86AB', width=3),
+                hovertemplate='<b>Total</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>'
+            ))
+
+            fig.update_layout(
+                title="France Hotel Nights: Total Line & Stacked Components",
+                xaxis_title="",
+                yaxis_title="Hotel Nights (thousands)",
+                height=400,
+                margin=dict(t=60, b=40, l=40, r=40),
+                barmode='stack',
+                legend=dict(
+                    yanchor="top",
+                    y=0.99,
+                    xanchor="left",
+                    x=0.01
+                ),
+                hovermode='x unified'
+            )
+
+            st.plotly_chart(fig, width='stretch')
+
+        # Show metrics for the available region(s)
+        if marne_available and france_available:
+            # Side-by-side metrics for both regions
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.subheader("Marne Metrics")
+                marne_total_avg = marne_nights_total_processed['Hotel_Nights'].mean()
+                marne_residents_avg = marne_nights_residents_processed['Hotel_Nights'].mean()
+                marne_nonresidents_avg = marne_nights_nonresidents_processed['Hotel_Nights'].mean()
+
+                col1a, col1b, col1c = st.columns(3)
+                with col1a:
+                    st.metric("Total Avg", f"{marne_total_avg:,.0f}")
+                with col1b:
+                    st.metric("Residents Avg", f"{marne_residents_avg:,.0f}")
+                with col1c:
+                    st.metric("Non-Residents Avg", f"{marne_nonresidents_avg:,.0f}")
+
+            with col2:
+                st.subheader("France Metrics")
+                france_total_avg = france_nights_total_processed['Hotel_Nights'].mean()
+                france_residents_avg = france_nights_residents_processed['Hotel_Nights'].mean()
+                france_nonresidents_avg = france_nights_nonresidents_processed['Hotel_Nights'].mean()
+
+                col2a, col2b, col2c = st.columns(3)
+                with col2a:
+                    st.metric("Total Avg", f"{france_total_avg:,.0f}")
+                with col2b:
+                    st.metric("Residents Avg", f"{france_residents_avg:,.0f}")
+                with col2c:
+                    st.metric("Non-Residents Avg", f"{france_nonresidents_avg:,.0f}")
+
+        elif marne_available:
+            # Marne metrics only
             total_avg = marne_nights_total_processed['Hotel_Nights'].mean()
             residents_avg = marne_nights_residents_processed['Hotel_Nights'].mean()
             nonresidents_avg = marne_nights_nonresidents_processed['Hotel_Nights'].mean()
@@ -926,10 +1119,137 @@ def main():
             with col3:
                 st.metric("Non-Residents Avg", f"{nonresidents_avg:,.0f}")
 
-            # Percentage breakdown chart
+        elif france_available:
+            # France metrics only
+            total_avg = france_nights_total_processed['Hotel_Nights'].mean()
+            residents_avg = france_nights_residents_processed['Hotel_Nights'].mean()
+            nonresidents_avg = france_nights_nonresidents_processed['Hotel_Nights'].mean()
+
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Avg", f"{total_avg:,.0f}")
+            with col2:
+                st.metric("Residents Avg", f"{residents_avg:,.0f}")
+            with col3:
+                st.metric("Non-Residents Avg", f"{nonresidents_avg:,.0f}")
+
+        # Percentage breakdown charts
+        if marne_available and france_available:
+            st.subheader("Residents vs Non-Residents Breakdown")
+            col1, col2 = st.columns(2)
+
+            with col1:
+                # Marne percentage breakdown
+                marne_breakdown_data = pd.DataFrame({
+                    'Date': marne_nights_total_processed['Date'],
+                    'Residents_Pct': (marne_nights_residents_processed['Hotel_Nights'] /
+                                     marne_nights_total_processed['Hotel_Nights'] * 100),
+                    'NonResidents_Pct': (marne_nights_nonresidents_processed['Hotel_Nights'] /
+                                        marne_nights_total_processed['Hotel_Nights'] * 100)
+                })
+
+                fig_pct = go.Figure()
+
+                fig_pct.add_trace(go.Bar(
+                    x=marne_breakdown_data['Date'],
+                    y=marne_breakdown_data['NonResidents_Pct'],
+                    name='Non-Residents %',
+                    marker_color='#F18F01',
+                    hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
+                    width=86400000 * 20
+                ))
+
+                fig_pct.add_trace(go.Bar(
+                    x=marne_breakdown_data['Date'],
+                    y=marne_breakdown_data['Residents_Pct'],
+                    name='Residents %',
+                    marker_color='#A23B72',
+                    hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
+                    width=86400000 * 20
+                ))
+
+                fig_pct.update_layout(
+                    title="Marne: Residents vs Non-Residents %",
+                    xaxis_title="",
+                    yaxis_title="Percentage (%)",
+                    height=300,
+                    margin=dict(t=40, b=40, l=40, r=40),
+                    yaxis=dict(range=[0, 100]),
+                    barmode='stack',
+                    legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+                    hovermode='x unified'
+                )
+
+                st.plotly_chart(fig_pct, width='stretch')
+
+                # Marne percentage metrics
+                marne_residents_pct_avg = marne_breakdown_data['Residents_Pct'].mean()
+                marne_nonresidents_pct_avg = marne_breakdown_data['NonResidents_Pct'].mean()
+
+                col1a, col1b = st.columns(2)
+                with col1a:
+                    st.metric("Residents Share", f"{marne_residents_pct_avg:.1f}%")
+                with col1b:
+                    st.metric("Non-Residents Share", f"{marne_nonresidents_pct_avg:.1f}%")
+
+            with col2:
+                # France percentage breakdown
+                france_breakdown_data = pd.DataFrame({
+                    'Date': france_nights_total_processed['Date'],
+                    'Residents_Pct': (france_nights_residents_processed['Hotel_Nights'] /
+                                     france_nights_total_processed['Hotel_Nights'] * 100),
+                    'NonResidents_Pct': (france_nights_nonresidents_processed['Hotel_Nights'] /
+                                        france_nights_total_processed['Hotel_Nights'] * 100)
+                })
+
+                fig_pct2 = go.Figure()
+
+                fig_pct2.add_trace(go.Bar(
+                    x=france_breakdown_data['Date'],
+                    y=france_breakdown_data['NonResidents_Pct'],
+                    name='Non-Residents %',
+                    marker_color='#F18F01',
+                    hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
+                    width=86400000 * 20
+                ))
+
+                fig_pct2.add_trace(go.Bar(
+                    x=france_breakdown_data['Date'],
+                    y=france_breakdown_data['Residents_Pct'],
+                    name='Residents %',
+                    marker_color='#A23B72',
+                    hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
+                    width=86400000 * 20
+                ))
+
+                fig_pct2.update_layout(
+                    title="France: Residents vs Non-Residents %",
+                    xaxis_title="",
+                    yaxis_title="Percentage (%)",
+                    height=300,
+                    margin=dict(t=40, b=40, l=40, r=40),
+                    yaxis=dict(range=[0, 100]),
+                    barmode='stack',
+                    legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+                    hovermode='x unified'
+                )
+
+                st.plotly_chart(fig_pct2, width='stretch')
+
+                # France percentage metrics
+                france_residents_pct_avg = france_breakdown_data['Residents_Pct'].mean()
+                france_nonresidents_pct_avg = france_breakdown_data['NonResidents_Pct'].mean()
+
+                col2a, col2b = st.columns(2)
+                with col2a:
+                    st.metric("Residents Share", f"{france_residents_pct_avg:.1f}%")
+                with col2b:
+                    st.metric("Non-Residents Share", f"{france_nonresidents_pct_avg:.1f}%")
+
+        elif marne_available:
+            # Marne only breakdown
             st.subheader("Residents vs Non-Residents Breakdown")
 
-            # Create percentage data
             breakdown_data = pd.DataFrame({
                 'Date': marne_nights_total_processed['Date'],
                 'Residents_Pct': (marne_nights_residents_processed['Hotel_Nights'] /
@@ -940,14 +1260,13 @@ def main():
 
             fig_pct = go.Figure()
 
-            # Stacked bar chart for percentages (same order: NR bottom, Residents top)
             fig_pct.add_trace(go.Bar(
                 x=breakdown_data['Date'],
                 y=breakdown_data['NonResidents_Pct'],
                 name='Non-Residents %',
                 marker_color='#F18F01',
                 hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
-                width=86400000 * 20  # Bar width in milliseconds (about 20 days)
+                width=86400000 * 20
             ))
 
             fig_pct.add_trace(go.Bar(
@@ -956,7 +1275,7 @@ def main():
                 name='Residents %',
                 marker_color='#A23B72',
                 hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
-                width=86400000 * 20  # Bar width in milliseconds (about 20 days)
+                width=86400000 * 20
             ))
 
             fig_pct.update_layout(
@@ -967,12 +1286,63 @@ def main():
                 margin=dict(t=40, b=40, l=40, r=40),
                 yaxis=dict(range=[0, 100]),
                 barmode='stack',
-                legend=dict(
-                    yanchor="top",
-                    y=0.99,
-                    xanchor="left",
-                    x=0.01
-                ),
+                legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+                hovermode='x unified'
+            )
+
+            st.plotly_chart(fig_pct, width='stretch')
+
+            # Summary metrics for breakdown
+            residents_pct_avg = breakdown_data['Residents_Pct'].mean()
+            nonresidents_pct_avg = breakdown_data['NonResidents_Pct'].mean()
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Residents Share", f"{residents_pct_avg:.1f}%")
+            with col2:
+                st.metric("Non-Residents Share", f"{nonresidents_pct_avg:.1f}%")
+
+        elif france_available:
+            # France only breakdown
+            st.subheader("Residents vs Non-Residents Breakdown")
+
+            breakdown_data = pd.DataFrame({
+                'Date': france_nights_total_processed['Date'],
+                'Residents_Pct': (france_nights_residents_processed['Hotel_Nights'] /
+                                 france_nights_total_processed['Hotel_Nights'] * 100),
+                'NonResidents_Pct': (france_nights_nonresidents_processed['Hotel_Nights'] /
+                                    france_nights_total_processed['Hotel_Nights'] * 100)
+            })
+
+            fig_pct = go.Figure()
+
+            fig_pct.add_trace(go.Bar(
+                x=breakdown_data['Date'],
+                y=breakdown_data['NonResidents_Pct'],
+                name='Non-Residents %',
+                marker_color='#F18F01',
+                hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
+                width=86400000 * 20
+            ))
+
+            fig_pct.add_trace(go.Bar(
+                x=breakdown_data['Date'],
+                y=breakdown_data['Residents_Pct'],
+                name='Residents %',
+                marker_color='#A23B72',
+                hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
+                width=86400000 * 20
+            ))
+
+            fig_pct.update_layout(
+                title="Percentage Breakdown: Residents vs Non-Residents (Stacked)",
+                xaxis_title="",
+                yaxis_title="Percentage (%)",
+                height=300,
+                margin=dict(t=40, b=40, l=40, r=40),
+                yaxis=dict(range=[0, 100]),
+                barmode='stack',
+                legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
                 hovermode='x unified'
             )
 
