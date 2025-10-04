@@ -53,6 +53,9 @@ def load_insee_data(url, region_name):
                     if "Hotels" in region_name:
                         df.columns = ['Date', 'Hotel_Count', 'Status'] + [f'Col_{i}' for i in range(3, len(df.columns))]
                         value_col = 'Hotel_Count'
+                    elif "Nights" in region_name:
+                        df.columns = ['Date', 'Hotel_Nights', 'Status'] + [f'Col_{i}' for i in range(3, len(df.columns))]
+                        value_col = 'Hotel_Nights'
                     else:
                         df.columns = ['Date', 'Occupancy_Rate', 'Status'] + [f'Col_{i}' for i in range(3, len(df.columns))]
                         value_col = 'Occupancy_Rate'
@@ -63,7 +66,14 @@ def load_insee_data(url, region_name):
 
                     # Clean the date column and convert to datetime
                     df['Date'] = df['Date'].astype(str).str.replace('"', '')
-                    df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m', errors='coerce')
+
+                    # Handle yearly data vs monthly data
+                    if "Nights" in region_name:
+                        # Yearly data format: just year
+                        df['Date'] = pd.to_datetime(df['Date'], format='%Y', errors='coerce')
+                    else:
+                        # Monthly data format: YYYY-MM
+                        df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m', errors='coerce')
 
                     # Clean status column
                     df['Status'] = df['Status'].astype(str).str.replace('"', '')
@@ -91,12 +101,14 @@ def get_hotel_data():
     marne_url = f"https://bdm.insee.fr/series/010598981/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
     france_url = f"https://bdm.insee.fr/series/010599344/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
     grand_est_hotels_url = f"https://bdm.insee.fr/series/010609578/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
+    marne_nights_url = f"https://bdm.insee.fr/series/010607146/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin=1&anneeFin={current_year}&revision=sansrevisions"
 
     marne_data = load_insee_data(marne_url, "Marne")
     france_data = load_insee_data(france_url, "France")
     grand_est_hotels_data = load_insee_data(grand_est_hotels_url, "Grand Est Hotels")
+    marne_nights_data = load_insee_data(marne_nights_url, "Marne Nights")
 
-    return marne_data, france_data, grand_est_hotels_data
+    return marne_data, france_data, grand_est_hotels_data, marne_nights_data
 
 def process_data(df):
     """Process and clean the data - data is already processed in load_insee_data"""
@@ -112,9 +124,9 @@ def main():
 
     # Load data
     with st.spinner("Loading hotel frequency data..."):
-        marne_data, france_data, grand_est_hotels_data = get_hotel_data()
+        marne_data, france_data, grand_est_hotels_data, marne_nights_data = get_hotel_data()
 
-    if marne_data is None and france_data is None and grand_est_hotels_data is None:
+    if marne_data is None and france_data is None and grand_est_hotels_data is None and marne_nights_data is None:
         st.error("Failed to load data from all sources. Please check the URLs and try again.")
         return
 
@@ -133,6 +145,11 @@ def main():
         grand_est_hotels_processed = process_data(grand_est_hotels_data)
     else:
         grand_est_hotels_processed = None
+
+    if marne_nights_data is not None:
+        marne_nights_processed = process_data(marne_nights_data)
+    else:
+        marne_nights_processed = None
 
     # Sidebar for controls
     st.sidebar.header("Dashboard Controls")
@@ -343,7 +360,7 @@ def main():
     # Seasonal Decomposition Analysis
     # st.header("📈 Trend & Seasonal Analysis")
 
-    tab1, tab2 = st.tabs(["Seasonal Decomposition", "Monthly Patterns"])
+    tab1, tab2, tab3 = st.tabs(["Seasonal Decomposition", "Monthly Patterns", "Hotel Nights (Yearly)"])
 
     with tab1:
         col1, col2 = st.columns(2)
@@ -636,6 +653,101 @@ def main():
                     margin=dict(t=50, b=40, l=40, r=40)
                 )
                 st.plotly_chart(fig, width='stretch')
+
+    with tab3:
+        st.subheader("Marne Hotel Nights - Yearly Analysis")
+
+        if marne_nights_processed is not None and 'Date' in marne_nights_processed.columns and 'Hotel_Nights' in marne_nights_processed.columns:
+            # Create main yearly trend chart
+            avg_nights = marne_nights_processed['Hotel_Nights'].mean()
+
+            fig = px.line(marne_nights_processed,
+                         x='Date',
+                         y='Hotel_Nights',
+                         title="Marne - Total Hotel Nights per Year",
+                         color_discrete_sequence=['#9467bd'])
+
+            # Add horizontal average line
+            fig.add_hline(y=avg_nights, line_dash="dash", line_color="red",
+                         annotation_text=f"Avg: {avg_nights:,.0f} nights",
+                         annotation_position="top right")
+
+            fig.update_layout(
+                height=350,
+                xaxis_title="",
+                yaxis_title="Hotel Nights (thousands)",
+                margin=dict(t=40, b=40, l=40, r=40)
+            )
+            st.plotly_chart(fig, width='stretch')
+
+            # Show key metrics
+            if len(marne_nights_processed) > 1:
+                recent_nights = marne_nights_processed['Hotel_Nights'].iloc[-1]
+                initial_nights = marne_nights_processed['Hotel_Nights'].iloc[0]
+                max_nights = marne_nights_processed['Hotel_Nights'].max()
+                min_nights = marne_nights_processed['Hotel_Nights'].min()
+
+                # Calculate trend
+                trend = "📈 Increasing" if recent_nights > initial_nights else "📉 Decreasing" if recent_nights < initial_nights else "➡️ Stable"
+
+                # Calculate growth rate
+                if initial_nights > 0:
+                    growth_rate = ((recent_nights - initial_nights) / initial_nights) * 100
+                else:
+                    growth_rate = 0
+
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Latest Year", f"{recent_nights:,.0f}")
+                with col2:
+                    st.metric("Average", f"{avg_nights:,.0f}")
+                with col3:
+                    st.metric("Peak Year", f"{max_nights:,.0f}")
+                with col4:
+                    st.metric("Growth", f"{growth_rate:+.1f}%")
+
+                # Add year-over-year change analysis
+                if len(marne_nights_processed) > 1:
+                    st.subheader("Year-over-Year Analysis")
+
+                    # Calculate year-over-year changes
+                    marne_yoy = marne_nights_processed.copy()
+                    marne_yoy['YoY_Change'] = marne_yoy['Hotel_Nights'].pct_change() * 100
+
+                    # Create YoY change chart
+                    fig_yoy = px.bar(marne_yoy.dropna(),
+                                    x='Date',
+                                    y='YoY_Change',
+                                    title="Year-over-Year Change (%)",
+                                    color='YoY_Change',
+                                    color_continuous_scale=['red', 'white', 'green'])
+
+                    fig_yoy.update_layout(
+                        height=300,
+                        xaxis_title="",
+                        yaxis_title="Change (%)",
+                        margin=dict(t=40, b=40, l=40, r=40),
+                        showlegend=False
+                    )
+                    st.plotly_chart(fig_yoy, width='stretch')
+
+                    # Show trend information
+                    positive_years = len(marne_yoy[marne_yoy['YoY_Change'] > 0])
+                    negative_years = len(marne_yoy[marne_yoy['YoY_Change'] < 0])
+                    total_years = len(marne_yoy.dropna())
+
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Growth Years", f"{positive_years}/{total_years}")
+                    with col2:
+                        st.metric("Decline Years", f"{negative_years}/{total_years}")
+                    with col3:
+                        if total_years > 0:
+                            avg_change = marne_yoy['YoY_Change'].mean()
+                            st.metric("Avg YoY Change", f"{avg_change:+.1f}%")
+
+        else:
+            st.error("Hotel nights data not available or missing required columns")
 
     # Add data toggle in sidebar for advanced users
     if st.sidebar.checkbox("Show Raw Data (Advanced)", value=False):
