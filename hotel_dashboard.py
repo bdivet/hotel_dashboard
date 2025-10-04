@@ -66,14 +66,8 @@ def load_insee_data(url, region_name):
 
                     # Clean the date column and convert to datetime
                     df['Date'] = df['Date'].astype(str).str.replace('"', '')
-
-                    # Handle yearly data vs monthly data
-                    if "Nights" in region_name:
-                        # Yearly data format: just year
-                        df['Date'] = pd.to_datetime(df['Date'], format='%Y', errors='coerce')
-                    else:
-                        # Monthly data format: YYYY-MM
-                        df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m', errors='coerce')
+                    # All data is now monthly format: YYYY-MM
+                    df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m', errors='coerce')
 
                     # Clean status column
                     df['Status'] = df['Status'].astype(str).str.replace('"', '')
@@ -101,14 +95,18 @@ def get_hotel_data():
     marne_url = f"https://bdm.insee.fr/series/010598981/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
     france_url = f"https://bdm.insee.fr/series/010599344/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
     grand_est_hotels_url = f"https://bdm.insee.fr/series/010609578/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
-    marne_nights_url = f"https://bdm.insee.fr/series/010607146/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin=1&anneeFin={current_year}&revision=sansrevisions"
+    marne_nights_total_url = f"https://bdm.insee.fr/series/010599245/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
+    marne_nights_residents_url = f"https://bdm.insee.fr/series/010599246/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
+    marne_nights_nonresidents_url = f"https://bdm.insee.fr/series/010599247/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
 
     marne_data = load_insee_data(marne_url, "Marne")
     france_data = load_insee_data(france_url, "France")
     grand_est_hotels_data = load_insee_data(grand_est_hotels_url, "Grand Est Hotels")
-    marne_nights_data = load_insee_data(marne_nights_url, "Marne Nights")
+    marne_nights_total_data = load_insee_data(marne_nights_total_url, "Marne Nights Total")
+    marne_nights_residents_data = load_insee_data(marne_nights_residents_url, "Marne Nights Residents")
+    marne_nights_nonresidents_data = load_insee_data(marne_nights_nonresidents_url, "Marne Nights NonResidents")
 
-    return marne_data, france_data, grand_est_hotels_data, marne_nights_data
+    return marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data
 
 def process_data(df):
     """Process and clean the data - data is already processed in load_insee_data"""
@@ -124,9 +122,9 @@ def main():
 
     # Load data
     with st.spinner("Loading hotel frequency data..."):
-        marne_data, france_data, grand_est_hotels_data, marne_nights_data = get_hotel_data()
+        marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data = get_hotel_data()
 
-    if marne_data is None and france_data is None and grand_est_hotels_data is None and marne_nights_data is None:
+    if all(data is None for data in [marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data]):
         st.error("Failed to load data from all sources. Please check the URLs and try again.")
         return
 
@@ -146,10 +144,20 @@ def main():
     else:
         grand_est_hotels_processed = None
 
-    if marne_nights_data is not None:
-        marne_nights_processed = process_data(marne_nights_data)
+    if marne_nights_total_data is not None:
+        marne_nights_total_processed = process_data(marne_nights_total_data)
     else:
-        marne_nights_processed = None
+        marne_nights_total_processed = None
+
+    if marne_nights_residents_data is not None:
+        marne_nights_residents_processed = process_data(marne_nights_residents_data)
+    else:
+        marne_nights_residents_processed = None
+
+    if marne_nights_nonresidents_data is not None:
+        marne_nights_nonresidents_processed = process_data(marne_nights_nonresidents_data)
+    else:
+        marne_nights_nonresidents_processed = None
 
     # Sidebar for controls
     st.sidebar.header("Dashboard Controls")
@@ -655,99 +663,141 @@ def main():
                 st.plotly_chart(fig, width='stretch')
 
     with tab3:
-        st.subheader("Marne Hotel Nights - Yearly Analysis")
+        st.subheader("Marne Hotel Nights - Monthly Analysis")
 
-        if marne_nights_processed is not None and 'Date' in marne_nights_processed.columns and 'Hotel_Nights' in marne_nights_processed.columns:
-            # Create main yearly trend chart
-            avg_nights = marne_nights_processed['Hotel_Nights'].mean()
+        # Check if we have all three datasets
+        if (marne_nights_total_processed is not None and
+            marne_nights_residents_processed is not None and
+            marne_nights_nonresidents_processed is not None):
 
-            fig = px.line(marne_nights_processed,
-                         x='Date',
-                         y='Hotel_Nights',
-                         title="Marne - Total Hotel Nights per Year",
-                         color_discrete_sequence=['#9467bd'])
+            # Main combined chart
+            fig = go.Figure()
 
-            # Add horizontal average line
-            fig.add_hline(y=avg_nights, line_dash="dash", line_color="red",
-                         annotation_text=f"Avg: {avg_nights:,.0f} nights",
-                         annotation_position="top right")
+            # Add total line
+            fig.add_trace(go.Scatter(
+                x=marne_nights_total_processed['Date'],
+                y=marne_nights_total_processed['Hotel_Nights'],
+                mode='lines',
+                name='Total',
+                line=dict(color='#2E86AB', width=3),
+                hovertemplate='<b>Total</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>'
+            ))
+
+            # Add residents line
+            fig.add_trace(go.Scatter(
+                x=marne_nights_residents_processed['Date'],
+                y=marne_nights_residents_processed['Hotel_Nights'],
+                mode='lines',
+                name='Residents',
+                line=dict(color='#A23B72', width=2),
+                hovertemplate='<b>Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>'
+            ))
+
+            # Add non-residents line
+            fig.add_trace(go.Scatter(
+                x=marne_nights_nonresidents_processed['Date'],
+                y=marne_nights_nonresidents_processed['Hotel_Nights'],
+                mode='lines',
+                name='Non-Residents',
+                line=dict(color='#F18F01', width=2),
+                hovertemplate='<b>Non-Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>'
+            ))
 
             fig.update_layout(
-                height=350,
+                title="Marne Hotel Nights: Total vs Residents vs Non-Residents",
                 xaxis_title="",
-                yaxis_title="Hotel Nights (thousands)",
-                margin=dict(t=40, b=40, l=40, r=40)
+                yaxis_title="Hotel Nights",
+                height=400,
+                margin=dict(t=60, b=40, l=40, r=40),
+                legend=dict(
+                    yanchor="top",
+                    y=0.99,
+                    xanchor="left",
+                    x=0.01
+                ),
+                hovermode='x unified'
             )
+
             st.plotly_chart(fig, width='stretch')
 
             # Show key metrics
-            if len(marne_nights_processed) > 1:
-                recent_nights = marne_nights_processed['Hotel_Nights'].iloc[-1]
-                initial_nights = marne_nights_processed['Hotel_Nights'].iloc[0]
-                max_nights = marne_nights_processed['Hotel_Nights'].max()
-                min_nights = marne_nights_processed['Hotel_Nights'].min()
+            total_avg = marne_nights_total_processed['Hotel_Nights'].mean()
+            residents_avg = marne_nights_residents_processed['Hotel_Nights'].mean()
+            nonresidents_avg = marne_nights_nonresidents_processed['Hotel_Nights'].mean()
 
-                # Calculate trend
-                trend = "📈 Increasing" if recent_nights > initial_nights else "📉 Decreasing" if recent_nights < initial_nights else "➡️ Stable"
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Avg", f"{total_avg:,.0f}")
+            with col2:
+                st.metric("Residents Avg", f"{residents_avg:,.0f}")
+            with col3:
+                st.metric("Non-Residents Avg", f"{nonresidents_avg:,.0f}")
 
-                # Calculate growth rate
-                if initial_nights > 0:
-                    growth_rate = ((recent_nights - initial_nights) / initial_nights) * 100
-                else:
-                    growth_rate = 0
+            # Percentage breakdown chart
+            st.subheader("Residents vs Non-Residents Breakdown")
 
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Latest Year", f"{recent_nights:,.0f}")
-                with col2:
-                    st.metric("Average", f"{avg_nights:,.0f}")
-                with col3:
-                    st.metric("Peak Year", f"{max_nights:,.0f}")
-                with col4:
-                    st.metric("Growth", f"{growth_rate:+.1f}%")
+            # Create percentage data
+            breakdown_data = pd.DataFrame({
+                'Date': marne_nights_total_processed['Date'],
+                'Residents_Pct': (marne_nights_residents_processed['Hotel_Nights'] /
+                                 marne_nights_total_processed['Hotel_Nights'] * 100),
+                'NonResidents_Pct': (marne_nights_nonresidents_processed['Hotel_Nights'] /
+                                    marne_nights_total_processed['Hotel_Nights'] * 100)
+            })
 
-                # Add year-over-year change analysis
-                if len(marne_nights_processed) > 1:
-                    st.subheader("Year-over-Year Analysis")
+            fig_pct = go.Figure()
 
-                    # Calculate year-over-year changes
-                    marne_yoy = marne_nights_processed.copy()
-                    marne_yoy['YoY_Change'] = marne_yoy['Hotel_Nights'].pct_change() * 100
+            # Stacked area chart
+            fig_pct.add_trace(go.Scatter(
+                x=breakdown_data['Date'],
+                y=breakdown_data['Residents_Pct'],
+                fill='tozeroy',
+                mode='none',
+                name='Residents',
+                fillcolor='rgba(162, 59, 114, 0.6)',
+                hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>'
+            ))
 
-                    # Create YoY change chart
-                    fig_yoy = px.bar(marne_yoy.dropna(),
-                                    x='Date',
-                                    y='YoY_Change',
-                                    title="Year-over-Year Change (%)",
-                                    color='YoY_Change',
-                                    color_continuous_scale=['red', 'white', 'green'])
+            fig_pct.add_trace(go.Scatter(
+                x=breakdown_data['Date'],
+                y=breakdown_data['NonResidents_Pct'],
+                fill='tonexty',
+                mode='none',
+                name='Non-Residents',
+                fillcolor='rgba(241, 143, 1, 0.6)',
+                hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>'
+            ))
 
-                    fig_yoy.update_layout(
-                        height=300,
-                        xaxis_title="",
-                        yaxis_title="Change (%)",
-                        margin=dict(t=40, b=40, l=40, r=40),
-                        showlegend=False
-                    )
-                    st.plotly_chart(fig_yoy, width='stretch')
+            fig_pct.update_layout(
+                title="Percentage Breakdown: Residents vs Non-Residents",
+                xaxis_title="",
+                yaxis_title="Percentage (%)",
+                height=300,
+                margin=dict(t=40, b=40, l=40, r=40),
+                yaxis=dict(range=[0, 100]),
+                legend=dict(
+                    yanchor="top",
+                    y=0.99,
+                    xanchor="left",
+                    x=0.01
+                ),
+                hovermode='x unified'
+            )
 
-                    # Show trend information
-                    positive_years = len(marne_yoy[marne_yoy['YoY_Change'] > 0])
-                    negative_years = len(marne_yoy[marne_yoy['YoY_Change'] < 0])
-                    total_years = len(marne_yoy.dropna())
+            st.plotly_chart(fig_pct, width='stretch')
 
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Growth Years", f"{positive_years}/{total_years}")
-                    with col2:
-                        st.metric("Decline Years", f"{negative_years}/{total_years}")
-                    with col3:
-                        if total_years > 0:
-                            avg_change = marne_yoy['YoY_Change'].mean()
-                            st.metric("Avg YoY Change", f"{avg_change:+.1f}%")
+            # Summary metrics for breakdown
+            residents_pct_avg = breakdown_data['Residents_Pct'].mean()
+            nonresidents_pct_avg = breakdown_data['NonResidents_Pct'].mean()
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Residents Share", f"{residents_pct_avg:.1f}%")
+            with col2:
+                st.metric("Non-Residents Share", f"{nonresidents_pct_avg:.1f}%")
 
         else:
-            st.error("Hotel nights data not available or missing required columns")
+            st.error("Hotel nights data not available or missing required datasets")
 
     # Add data toggle in sidebar for advanced users
     if st.sidebar.checkbox("Show Raw Data (Advanced)", value=False):
