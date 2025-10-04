@@ -673,6 +673,26 @@ def main():
             # Main combined chart
             fig = go.Figure()
 
+            # Add stacked bars for residents
+            fig.add_trace(go.Bar(
+                x=marne_nights_residents_processed['Date'],
+                y=marne_nights_residents_processed['Hotel_Nights'],
+                name='Residents',
+                marker_color='#A23B72',
+                hovertemplate='<b>Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
+                width=86400000 * 20  # Bar width in milliseconds (about 20 days)
+            ))
+
+            # Add stacked bars for non-residents
+            fig.add_trace(go.Bar(
+                x=marne_nights_nonresidents_processed['Date'],
+                y=marne_nights_nonresidents_processed['Hotel_Nights'],
+                name='Non-Residents',
+                marker_color='#F18F01',
+                hovertemplate='<b>Non-Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
+                width=86400000 * 20  # Bar width in milliseconds (about 20 days)
+            ))
+
             # Add total line
             fig.add_trace(go.Scatter(
                 x=marne_nights_total_processed['Date'],
@@ -683,32 +703,13 @@ def main():
                 hovertemplate='<b>Total</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>'
             ))
 
-            # Add residents line
-            fig.add_trace(go.Scatter(
-                x=marne_nights_residents_processed['Date'],
-                y=marne_nights_residents_processed['Hotel_Nights'],
-                mode='lines',
-                name='Residents',
-                line=dict(color='#A23B72', width=2),
-                hovertemplate='<b>Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>'
-            ))
-
-            # Add non-residents line
-            fig.add_trace(go.Scatter(
-                x=marne_nights_nonresidents_processed['Date'],
-                y=marne_nights_nonresidents_processed['Hotel_Nights'],
-                mode='lines',
-                name='Non-Residents',
-                line=dict(color='#F18F01', width=2),
-                hovertemplate='<b>Non-Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>'
-            ))
-
             fig.update_layout(
-                title="Marne Hotel Nights: Total vs Residents vs Non-Residents",
+                title="Marne Hotel Nights: Total Line & Stacked Components",
                 xaxis_title="",
                 yaxis_title="Hotel Nights (x1,000)",
                 height=400,
                 margin=dict(t=60, b=40, l=40, r=40),
+                barmode='stack',
                 legend=dict(
                     yanchor="top",
                     y=0.99,
@@ -747,11 +748,11 @@ def main():
 
             fig_pct = go.Figure()
 
-            # Side-by-side bar chart
+            # Stacked bar chart for percentages
             fig_pct.add_trace(go.Bar(
                 x=breakdown_data['Date'],
                 y=breakdown_data['Residents_Pct'],
-                name='Residents',
+                name='Residents %',
                 marker_color='#A23B72',
                 hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
                 width=86400000 * 20  # Bar width in milliseconds (about 20 days)
@@ -760,20 +761,20 @@ def main():
             fig_pct.add_trace(go.Bar(
                 x=breakdown_data['Date'],
                 y=breakdown_data['NonResidents_Pct'],
-                name='Non-Residents',
+                name='Non-Residents %',
                 marker_color='#F18F01',
                 hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
                 width=86400000 * 20  # Bar width in milliseconds (about 20 days)
             ))
 
             fig_pct.update_layout(
-                title="Percentage Breakdown: Residents vs Non-Residents",
+                title="Percentage Breakdown: Residents vs Non-Residents (Stacked)",
                 xaxis_title="",
                 yaxis_title="Percentage (%)",
                 height=300,
                 margin=dict(t=40, b=40, l=40, r=40),
                 yaxis=dict(range=[0, 100]),
-                barmode='group',
+                barmode='stack',
                 legend=dict(
                     yanchor="top",
                     y=0.99,
