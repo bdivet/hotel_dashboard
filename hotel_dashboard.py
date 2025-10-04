@@ -162,6 +162,14 @@ def main():
     # Sidebar for controls
     st.sidebar.header("Dashboard Controls")
 
+    # Analysis type selection
+    analysis_type = st.sidebar.radio(
+        "Choose Analysis Type",
+        ["Occupancy Rate (%)", "Hotel Nights"],
+        index=0,
+        help="Select whether to analyze occupancy rates or total hotel nights"
+    )
+
     # Data source selection
     available_sources = []
     if marne_processed is not None:
@@ -368,299 +376,312 @@ def main():
     # Seasonal Decomposition Analysis
     # st.header("📈 Trend & Seasonal Analysis")
 
-    tab1, tab2, tab3 = st.tabs(["Seasonal Decomposition", "Monthly Patterns", "Hotel Nights"])
+    tab1, tab2, tab3 = st.tabs(["Seasonal Decomposition", "Monthly Patterns", "Hotel Nights Breakdown"])
 
     with tab1:
+        st.subheader(f"Seasonal Decomposition - {analysis_type}")
+
+        # Determine which data to use based on analysis type
+        def get_analysis_data(region_processed, nights_processed, analysis_type):
+            if analysis_type == "Hotel Nights":
+                return nights_processed, 'Hotel_Nights', 'Hotel Nights'
+            else:
+                return region_processed, 'Occupancy_Rate', 'Occupancy Rate (%)'
+
         col1, col2 = st.columns(2)
 
         with col1:
-            if "Marne" in selected_regions and marne_processed is not None and len(marne_processed) > 24:
-                st.subheader("Marne - Seasonal Decomposition")
-                try:
-                    # Prepare data for seasonal decomposition
-                    marne_ts = marne_processed.set_index('Date')['Occupancy_Rate'].dropna()
-                    marne_ts = marne_ts.asfreq('MS')  # Monthly start frequency
+            if "Marne" in selected_regions:
+                if analysis_type == "Hotel Nights":
+                    data_source = marne_nights_total_processed
+                    value_col = 'Hotel_Nights'
+                    y_label = 'Hotel Nights'
+                    region_name = "Marne"
+                else:
+                    data_source = marne_processed
+                    value_col = 'Occupancy_Rate'
+                    y_label = 'Occupancy Rate (%)'
+                    region_name = "Marne"
 
-                    # Fill missing values with interpolation
-                    marne_ts = marne_ts.interpolate(method='linear')
+                if data_source is not None and len(data_source) > 24:
+                    st.subheader(f"{region_name} - Seasonal Decomposition")
+                    try:
+                        # Prepare data for seasonal decomposition
+                        ts_data = data_source.set_index('Date')[value_col].dropna()
+                        ts_data = ts_data.asfreq('MS')  # Monthly start frequency
 
-                    # If still missing values at edges, fill with mean
-                    marne_ts = marne_ts.fillna(marne_ts.mean())
+                        # Fill missing values with interpolation
+                        ts_data = ts_data.interpolate(method='linear')
+                        ts_data = ts_data.fillna(ts_data.mean())
 
-                    if len(marne_ts) > 24:  # Need at least 2 years for seasonal decomposition
-                        decomposition = seasonal_decompose(marne_ts, model='additive', period=12)
+                        if len(ts_data) > 24:  # Need at least 2 years for seasonal decomposition
+                            decomposition = seasonal_decompose(ts_data, model='additive', period=12)
 
-                        # Create subplots for decomposition
-                        fig = go.Figure()
+                            # Create subplots for decomposition
+                            fig = go.Figure()
 
-                        # Original data
-                        fig.add_trace(go.Scatter(
-                            x=marne_ts.index, y=marne_ts.values,
-                            mode='lines', name='Original',
-                            line=dict(color='#1f77b4')
-                        ))
+                            # Original data
+                            fig.add_trace(go.Scatter(
+                                x=ts_data.index, y=ts_data.values,
+                                mode='lines', name='Original',
+                                line=dict(color='#1f77b4')
+                            ))
 
-                        # Trend
-                        fig.add_trace(go.Scatter(
-                            x=decomposition.trend.index, y=decomposition.trend.values,
-                            mode='lines', name='Trend',
-                            line=dict(color='red', width=2)
-                        ))
+                            # Trend
+                            fig.add_trace(go.Scatter(
+                                x=decomposition.trend.index, y=decomposition.trend.values,
+                                mode='lines', name='Trend',
+                                line=dict(color='red', width=2)
+                            ))
 
-                        # Set shared y-axis range if France is also selected
-                        if "France" in selected_regions and france_processed is not None:
-                            all_min = min(marne_ts.min(), france_processed['Occupancy_Rate'].min())
-                            all_max = max(marne_ts.max(), france_processed['Occupancy_Rate'].max())
-                            fig.update_layout(yaxis=dict(range=[all_min - 2, all_max + 2]))
+                            fig.update_layout(
+                                title=f"Marne: Original Data & Trend ({analysis_type})",
+                                height=320,
+                                xaxis_title="",
+                                yaxis_title=y_label,
+                                margin=dict(t=50, b=30, l=40, r=40)
+                            )
 
-                        fig.update_layout(
-                            title="Marne: Original Data & Trend",
-                            height=320,
-                            xaxis_title="",
-                            yaxis_title="Occupancy Rate (%)",
-                            margin=dict(t=50, b=30, l=40, r=40)
-                        )
+                            st.plotly_chart(fig, width='stretch')
 
-                        st.plotly_chart(fig, width='stretch')
+                            # Seasonal component
+                            fig_seasonal = px.line(
+                                x=decomposition.seasonal.index,
+                                y=decomposition.seasonal.values,
+                                title="Marne - Seasonal Component"
+                            )
 
-                        # Seasonal component - store for shared y-axis
-                        marne_seasonal_min = decomposition.seasonal.min()
-                        marne_seasonal_max = decomposition.seasonal.max()
+                            fig_seasonal.update_layout(
+                                height=250,
+                                margin=dict(t=40, b=30, l=40, r=40)
+                            )
+                            st.plotly_chart(fig_seasonal, width='stretch')
 
-                        fig_seasonal = px.line(
-                            x=decomposition.seasonal.index,
-                            y=decomposition.seasonal.values,
-                            title="Marne - Seasonal Component"
-                        )
-
-                        # Set shared y-axis range for seasonal components if France is also selected
-                        if "France" in selected_regions and france_processed is not None:
-                            # Calculate combined range (will be updated when France chart is created)
-                            try:
-                                france_ts_temp = france_processed.set_index('Date')['Occupancy_Rate'].dropna()
-                                france_ts_temp = france_ts_temp.asfreq('MS').interpolate(method='linear').fillna(france_ts_temp.mean())
-                                if len(france_ts_temp) > 24:
-                                    france_decomp_temp = seasonal_decompose(france_ts_temp, model='additive', period=12)
-                                    france_seasonal_min = france_decomp_temp.seasonal.min()
-                                    france_seasonal_max = france_decomp_temp.seasonal.max()
-                                    combined_min = min(marne_seasonal_min, france_seasonal_min)
-                                    combined_max = max(marne_seasonal_max, france_seasonal_max)
-                                    fig_seasonal.update_layout(yaxis=dict(range=[combined_min - 0.5, combined_max + 0.5]))
-                            except:
-                                pass
-
-                        fig_seasonal.update_layout(
-                            height=250,
-                            margin=dict(t=40, b=30, l=40, r=40)
-                        )
-                        st.plotly_chart(fig_seasonal, width='stretch')
-
-                except Exception as e:
-                    st.info(f"Seasonal decomposition not available for Marne: {str(e)}")
+                    except Exception as e:
+                        st.info(f"Seasonal decomposition not available for Marne: {str(e)}")
 
         with col2:
-            if "France" in selected_regions and france_processed is not None and len(france_processed) > 24:
-                st.subheader("France - Seasonal Decomposition")
-                try:
-                    # Prepare data for seasonal decomposition
-                    france_ts = france_processed.set_index('Date')['Occupancy_Rate'].dropna()
-                    france_ts = france_ts.asfreq('MS')  # Monthly start frequency
+            if "France" in selected_regions:
+                if analysis_type == "Hotel Nights":
+                    st.info("Hotel Nights data only available for Marne region")
+                else:
+                    data_source = france_processed
+                    value_col = 'Occupancy_Rate'
+                    y_label = 'Occupancy Rate (%)'
+                    region_name = "France"
 
-                    # Fill missing values with interpolation
-                    france_ts = france_ts.interpolate(method='linear')
+                    if data_source is not None and len(data_source) > 24:
+                        st.subheader(f"{region_name} - Seasonal Decomposition")
+                        try:
+                            # Prepare data for seasonal decomposition
+                            ts_data = data_source.set_index('Date')[value_col].dropna()
+                            ts_data = ts_data.asfreq('MS')  # Monthly start frequency
 
-                    # If still missing values at edges, fill with mean
-                    france_ts = france_ts.fillna(france_ts.mean())
+                            # Fill missing values with interpolation
+                            ts_data = ts_data.interpolate(method='linear')
+                            ts_data = ts_data.fillna(ts_data.mean())
 
-                    if len(france_ts) > 24:  # Need at least 2 years for seasonal decomposition
-                        decomposition = seasonal_decompose(france_ts, model='additive', period=12)
+                            if len(ts_data) > 24:  # Need at least 2 years for seasonal decomposition
+                                decomposition = seasonal_decompose(ts_data, model='additive', period=12)
 
-                        # Create subplots for decomposition
-                        fig = go.Figure()
+                                # Create subplots for decomposition
+                                fig = go.Figure()
 
-                        # Original data
-                        fig.add_trace(go.Scatter(
-                            x=france_ts.index, y=france_ts.values,
-                            mode='lines', name='Original',
-                            line=dict(color='#ff7f0e')
-                        ))
+                                # Original data
+                                fig.add_trace(go.Scatter(
+                                    x=ts_data.index, y=ts_data.values,
+                                    mode='lines', name='Original',
+                                    line=dict(color='#ff7f0e')
+                                ))
 
-                        # Trend
-                        fig.add_trace(go.Scatter(
-                            x=decomposition.trend.index, y=decomposition.trend.values,
-                            mode='lines', name='Trend',
-                            line=dict(color='red', width=2)
-                        ))
+                                # Trend
+                                fig.add_trace(go.Scatter(
+                                    x=decomposition.trend.index, y=decomposition.trend.values,
+                                    mode='lines', name='Trend',
+                                    line=dict(color='red', width=2)
+                                ))
 
-                        # Set shared y-axis range if Marne is also selected
-                        if "Marne" in selected_regions and marne_processed is not None:
-                            all_min = min(france_ts.min(), marne_processed['Occupancy_Rate'].min())
-                            all_max = max(france_ts.max(), marne_processed['Occupancy_Rate'].max())
-                            fig.update_layout(yaxis=dict(range=[all_min - 2, all_max + 2]))
+                                fig.update_layout(
+                                    title=f"France: Original Data & Trend ({analysis_type})",
+                                    height=320,
+                                    xaxis_title="",
+                                    yaxis_title=y_label,
+                                    margin=dict(t=50, b=30, l=40, r=40)
+                                )
 
-                        fig.update_layout(
-                            title="France: Original Data & Trend",
-                            height=320,
-                            xaxis_title="",
-                            yaxis_title="Occupancy Rate (%)",
-                            margin=dict(t=50, b=30, l=40, r=40)
-                        )
+                                st.plotly_chart(fig, width='stretch')
 
-                        st.plotly_chart(fig, width='stretch')
+                                # Seasonal component
+                                fig_seasonal = px.line(
+                                    x=decomposition.seasonal.index,
+                                    y=decomposition.seasonal.values,
+                                    title="France - Seasonal Component"
+                                )
 
-                        # Seasonal component
-                        fig_seasonal = px.line(
-                            x=decomposition.seasonal.index,
-                            y=decomposition.seasonal.values,
-                            title="France - Seasonal Component"
-                        )
+                                fig_seasonal.update_layout(
+                                    height=250,
+                                    margin=dict(t=40, b=30, l=40, r=40)
+                                )
+                                st.plotly_chart(fig_seasonal, width='stretch')
 
-                        # Set shared y-axis range for seasonal components if Marne is also selected
-                        if "Marne" in selected_regions and marne_processed is not None:
-                            try:
-                                marne_ts_temp = marne_processed.set_index('Date')['Occupancy_Rate'].dropna()
-                                marne_ts_temp = marne_ts_temp.asfreq('MS').interpolate(method='linear').fillna(marne_ts_temp.mean())
-                                if len(marne_ts_temp) > 24:
-                                    marne_decomp_temp = seasonal_decompose(marne_ts_temp, model='additive', period=12)
-                                    marne_seasonal_min = marne_decomp_temp.seasonal.min()
-                                    marne_seasonal_max = marne_decomp_temp.seasonal.max()
-                                    france_seasonal_min = decomposition.seasonal.min()
-                                    france_seasonal_max = decomposition.seasonal.max()
-                                    combined_min = min(marne_seasonal_min, france_seasonal_min)
-                                    combined_max = max(marne_seasonal_max, france_seasonal_max)
-                                    fig_seasonal.update_layout(yaxis=dict(range=[combined_min - 0.5, combined_max + 0.5]))
-                            except:
-                                pass
-
-                        fig_seasonal.update_layout(
-                            height=250,
-                            margin=dict(t=40, b=30, l=40, r=40)
-                        )
-                        st.plotly_chart(fig_seasonal, width='stretch')
-
-                except Exception as e:
-                    st.info(f"Seasonal decomposition not available for France: {str(e)}")
+                        except Exception as e:
+                            st.info(f"Seasonal decomposition not available for France: {str(e)}")
 
     with tab2:
-        st.subheader("Monthly Occupancy Patterns Across Years")
+        st.subheader(f"Monthly Patterns Across Years - {analysis_type}")
 
-        # Create monthly analysis
-        if ((marne_processed is not None and "Marne" in selected_regions) or
-            (france_processed is not None and "France" in selected_regions)):
+        # Create monthly analysis based on selected type
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-            fig = go.Figure()
-
-            if "Marne" in selected_regions and marne_processed is not None:
+        if analysis_type == "Hotel Nights":
+            # Use Marne hotel nights data
+            if marne_nights_total_processed is not None and "Marne" in selected_regions:
                 # Add month and year columns for analysis
-                marne_analysis = marne_processed.copy()
+                marne_analysis = marne_nights_total_processed.copy()
                 marne_analysis['Month'] = marne_analysis['Date'].dt.month
                 marne_analysis['Year'] = marne_analysis['Date'].dt.year
 
                 # Group by month and get all years
-                monthly_marne = marne_analysis.groupby(['Month', 'Year'])['Occupancy_Rate'].mean().reset_index()
+                monthly_data = marne_analysis.groupby(['Month', 'Year'])['Hotel_Nights'].mean().reset_index()
 
-                # Create box plot data
-                months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
+                fig = go.Figure()
                 for month in range(1, 13):
-                    month_data = monthly_marne[monthly_marne['Month'] == month]['Occupancy_Rate']
+                    month_data = monthly_data[monthly_data['Month'] == month]['Hotel_Nights']
                     if len(month_data) > 0:
                         fig.add_trace(go.Box(
                             y=month_data,
                             name=months[month-1],
                             boxmean=True,
-                            marker_color='#1f77b4',
+                            marker_color='#2E86AB',
                             showlegend=False
                         ))
 
-            if "France" in selected_regions and france_processed is not None:
-                # Add month and year columns for analysis
-                france_analysis = france_processed.copy()
-                france_analysis['Month'] = france_analysis['Date'].dt.month
-                france_analysis['Year'] = france_analysis['Date'].dt.year
+                fig.update_layout(
+                    title="Marne - Monthly Hotel Nights Distribution",
+                    xaxis_title="",
+                    yaxis_title="Hotel Nights",
+                    height=320,
+                    margin=dict(t=50, b=40, l=40, r=40)
+                )
+                st.plotly_chart(fig, width='stretch')
+            else:
+                st.info("Hotel Nights data only available for Marne region")
 
-                # Group by month
-                monthly_france = france_analysis.groupby(['Month', 'Year'])['Occupancy_Rate'].mean().reset_index()
+        else:
+            # Use occupancy rate data
+            if ((marne_processed is not None and "Marne" in selected_regions) or
+                (france_processed is not None and "France" in selected_regions)):
 
-                # If we have both datasets, create separate box plots
+                fig = go.Figure()
+
                 if "Marne" in selected_regions and marne_processed is not None:
-                    fig2 = go.Figure()
+                    # Add month and year columns for analysis
+                    marne_analysis = marne_processed.copy()
+                    marne_analysis['Month'] = marne_analysis['Date'].dt.month
+                    marne_analysis['Year'] = marne_analysis['Date'].dt.year
+
+                    # Group by month and get all years
+                    monthly_marne = marne_analysis.groupby(['Month', 'Year'])['Occupancy_Rate'].mean().reset_index()
+
                     for month in range(1, 13):
-                        month_data = monthly_france[monthly_france['Month'] == month]['Occupancy_Rate']
-                        if len(month_data) > 0:
-                            fig2.add_trace(go.Box(
-                                y=month_data,
-                                name=months[month-1],
-                                boxmean=True,
-                                marker_color='#ff7f0e',
-                                showlegend=False
-                            ))
-
-                    # Calculate shared y-axis range for monthly patterns
-                    marne_monthly_min = monthly_marne['Occupancy_Rate'].min()
-                    marne_monthly_max = monthly_marne['Occupancy_Rate'].max()
-                    france_monthly_min = monthly_france['Occupancy_Rate'].min()
-                    france_monthly_max = monthly_france['Occupancy_Rate'].max()
-                    combined_min = min(marne_monthly_min, france_monthly_min)
-                    combined_max = max(marne_monthly_max, france_monthly_max)
-                    y_range = [combined_min - 2, combined_max + 2]
-
-                    fig.update_layout(
-                        title="Marne - Monthly Occupancy Distribution",
-                        xaxis_title="",
-                        yaxis_title="Occupancy Rate (%)",
-                        height=320,
-                        margin=dict(t=50, b=40, l=40, r=40),
-                        yaxis=dict(range=y_range)
-                    )
-
-                    fig2.update_layout(
-                        title="France - Monthly Occupancy Distribution",
-                        xaxis_title="",
-                        yaxis_title="Occupancy Rate (%)",
-                        height=320,
-                        margin=dict(t=50, b=40, l=40, r=40),
-                        yaxis=dict(range=y_range)
-                    )
-
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        st.plotly_chart(fig, width='stretch')
-
-                    with col2:
-                        st.plotly_chart(fig2, width='stretch')
-                else:
-                    # Only France data
-                    for month in range(1, 13):
-                        month_data = monthly_france[monthly_france['Month'] == month]['Occupancy_Rate']
+                        month_data = monthly_marne[monthly_marne['Month'] == month]['Occupancy_Rate']
                         if len(month_data) > 0:
                             fig.add_trace(go.Box(
                                 y=month_data,
                                 name=months[month-1],
                                 boxmean=True,
-                                marker_color='#ff7f0e',
+                                marker_color='#1f77b4',
                                 showlegend=False
                             ))
 
+                if "France" in selected_regions and france_processed is not None:
+                    # Add month and year columns for analysis
+                    france_analysis = france_processed.copy()
+                    france_analysis['Month'] = france_analysis['Date'].dt.month
+                    france_analysis['Year'] = france_analysis['Date'].dt.year
+
+                    # Group by month
+                    monthly_france = france_analysis.groupby(['Month', 'Year'])['Occupancy_Rate'].mean().reset_index()
+
+                    # If we have both datasets, create separate box plots
+                    if "Marne" in selected_regions and marne_processed is not None:
+                        fig2 = go.Figure()
+                        for month in range(1, 13):
+                            month_data = monthly_france[monthly_france['Month'] == month]['Occupancy_Rate']
+                            if len(month_data) > 0:
+                                fig2.add_trace(go.Box(
+                                    y=month_data,
+                                    name=months[month-1],
+                                    boxmean=True,
+                                    marker_color='#ff7f0e',
+                                    showlegend=False
+                                ))
+
+                        # Calculate shared y-axis range for monthly patterns
+                        marne_monthly_min = monthly_marne['Occupancy_Rate'].min()
+                        marne_monthly_max = monthly_marne['Occupancy_Rate'].max()
+                        france_monthly_min = monthly_france['Occupancy_Rate'].min()
+                        france_monthly_max = monthly_france['Occupancy_Rate'].max()
+                        combined_min = min(marne_monthly_min, france_monthly_min)
+                        combined_max = max(marne_monthly_max, france_monthly_max)
+                        y_range = [combined_min - 2, combined_max + 2]
+
+                        fig.update_layout(
+                            title="Marne - Monthly Occupancy Distribution",
+                            xaxis_title="",
+                            yaxis_title="Occupancy Rate (%)",
+                            height=320,
+                            margin=dict(t=50, b=40, l=40, r=40),
+                            yaxis=dict(range=y_range)
+                        )
+
+                        fig2.update_layout(
+                            title="France - Monthly Occupancy Distribution",
+                            xaxis_title="",
+                            yaxis_title="Occupancy Rate (%)",
+                            height=320,
+                            margin=dict(t=50, b=40, l=40, r=40),
+                            yaxis=dict(range=y_range)
+                        )
+
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.plotly_chart(fig, width='stretch')
+
+                        with col2:
+                            st.plotly_chart(fig2, width='stretch')
+                    else:
+                        # Only France data
+                        for month in range(1, 13):
+                            month_data = monthly_france[monthly_france['Month'] == month]['Occupancy_Rate']
+                            if len(month_data) > 0:
+                                fig.add_trace(go.Box(
+                                    y=month_data,
+                                    name=months[month-1],
+                                    boxmean=True,
+                                    marker_color='#ff7f0e',
+                                    showlegend=False
+                                ))
+
+                        fig.update_layout(
+                            title="France - Monthly Occupancy Distribution",
+                            xaxis_title="",
+                            yaxis_title="Occupancy Rate (%)",
+                            height=320,
+                            margin=dict(t=50, b=40, l=40, r=40)
+                        )
+                        st.plotly_chart(fig, width='stretch')
+                else:
+                    # Only Marne data
                     fig.update_layout(
-                        title="France - Monthly Occupancy Distribution",
+                        title="Marne - Monthly Occupancy Distribution",
                         xaxis_title="",
                         yaxis_title="Occupancy Rate (%)",
                         height=320,
                         margin=dict(t=50, b=40, l=40, r=40)
                     )
                     st.plotly_chart(fig, width='stretch')
-            else:
-                # Only Marne data
-                fig.update_layout(
-                    title="Marne - Monthly Occupancy Distribution",
-                    xaxis_title="",
-                    yaxis_title="Occupancy Rate (%)",
-                    height=320,
-                    margin=dict(t=50, b=40, l=40, r=40)
-                )
-                st.plotly_chart(fig, width='stretch')
 
     with tab3:
         st.subheader("Marne Hotel Nights - Monthly Analysis")
