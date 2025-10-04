@@ -187,9 +187,10 @@ def main():
                     fig.update_layout(yaxis=dict(range=[all_min - 2, all_max + 2]))
 
                 fig.update_layout(
-                    height=400,
-                    xaxis_title="Date",
-                    yaxis_title="Occupancy Rate (%)"
+                    height=350,
+                    # xaxis_title="Date",
+                    yaxis_title="Occupancy Rate (%)",
+                    margin=dict(t=40, b=40, l=40, r=40)
                 )
                 st.plotly_chart(fig, width='stretch')
             else:
@@ -222,9 +223,10 @@ def main():
                     fig.update_layout(yaxis=dict(range=[all_min - 2, all_max + 2]))
 
                 fig.update_layout(
-                    height=400,
-                    xaxis_title="Date",
-                    yaxis_title="Occupancy Rate (%)"
+                    height=350,
+                    # xaxis_title="Date",
+                    yaxis_title="Occupancy Rate (%)",
+                    margin=dict(t=40, b=40, l=40, r=40)
                 )
                 st.plotly_chart(fig, width='stretch')
             else:
@@ -262,9 +264,10 @@ def main():
 
             fig.update_layout(
                 title="Hotel Occupancy Rate Comparison: Marne vs France",
-                xaxis_title="Date",
+                # xaxis_title="Date",
                 yaxis_title="Occupancy Rate (%)",
-                height=500,
+                height=400,
+                margin=dict(t=60, b=40, l=40, r=40),
                 legend=dict(
                     yanchor="top",
                     y=0.99,
@@ -295,7 +298,7 @@ def main():
 
     # Grand Est Hotels Count
     if grand_est_hotels_processed is not None:
-        st.header("🏨 Number of Hotels in Grand Est Region")
+        # st.header("🏨 Number of Hotels in Grand Est Region")
 
         if 'Date' in grand_est_hotels_processed.columns and 'Hotel_Count' in grand_est_hotels_processed.columns:
             avg_count = grand_est_hotels_processed['Hotel_Count'].mean()
@@ -312,9 +315,10 @@ def main():
                          annotation_position="top right")
 
             fig.update_layout(
-                height=400,
-                xaxis_title="Date",
-                yaxis_title="Number of Hotels"
+                height=350,
+                # xaxis_title="Date",
+                yaxis_title="Number of Hotels",
+                margin=dict(t=40, b=40, l=40, r=40)
             )
             st.plotly_chart(fig, width='stretch')
 
@@ -386,9 +390,10 @@ def main():
 
                         fig.update_layout(
                             title="Marne: Original Data & Trend",
-                            height=400,
-                            xaxis_title="Date",
-                            yaxis_title="Occupancy Rate (%)"
+                            height=320,
+                            # xaxis_title="Date",
+                            yaxis_title="Occupancy Rate (%)",
+                            margin=dict(t=50, b=30, l=40, r=40)
                         )
 
                         st.plotly_chart(fig, width='stretch')
@@ -419,7 +424,10 @@ def main():
                             except:
                                 pass
 
-                        fig_seasonal.update_layout(height=300)
+                        fig_seasonal.update_layout(
+                            height=250,
+                            margin=dict(t=40, b=30, l=40, r=40)
+                        )
                         st.plotly_chart(fig_seasonal, width='stretch')
 
                 except Exception as e:
@@ -467,9 +475,10 @@ def main():
 
                         fig.update_layout(
                             title="France: Original Data & Trend",
-                            height=400,
-                            xaxis_title="Date",
-                            yaxis_title="Occupancy Rate (%)"
+                            height=320,
+                            # xaxis_title="Date",
+                            yaxis_title="Occupancy Rate (%)",
+                            margin=dict(t=50, b=30, l=40, r=40)
                         )
 
                         st.plotly_chart(fig, width='stretch')
@@ -498,7 +507,10 @@ def main():
                             except:
                                 pass
 
-                        fig_seasonal.update_layout(height=300)
+                        fig_seasonal.update_layout(
+                            height=250,
+                            margin=dict(t=40, b=30, l=40, r=40)
+                        )
                         st.plotly_chart(fig_seasonal, width='stretch')
 
                 except Exception as e:
@@ -573,7 +585,8 @@ def main():
                         title="Marne - Monthly Occupancy Distribution",
                         xaxis_title="Month",
                         yaxis_title="Occupancy Rate (%)",
-                        height=400,
+                        height=320,
+                        margin=dict(t=50, b=40, l=40, r=40),
                         yaxis=dict(range=y_range)
                     )
 
@@ -581,7 +594,8 @@ def main():
                         title="France - Monthly Occupancy Distribution",
                         xaxis_title="Month",
                         yaxis_title="Occupancy Rate (%)",
-                        height=400,
+                        height=320,
+                        margin=dict(t=50, b=40, l=40, r=40),
                         yaxis=dict(range=y_range)
                     )
 
