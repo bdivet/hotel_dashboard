@@ -1,5 +1,12 @@
 import warnings
 warnings.filterwarnings('ignore')
+import os
+os.environ['PYTHONWARNINGS'] = 'ignore'
+
+# Suppress specific warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+warnings.filterwarnings('ignore', category=UserWarning)
 
 import streamlit as st
 import pandas as pd
@@ -8,6 +15,7 @@ import plotly.graph_objects as go
 import requests
 import io
 import zipfile
+import time
 from datetime import datetime
 from statsmodels.tsa.seasonal import seasonal_decompose
 import numpy as np
@@ -18,73 +26,83 @@ st.set_page_config(
     layout="wide"
 )
 
-def load_insee_data(url, region_name):
-    """Load and process INSEE CSV data from ZIP archive"""
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
+def load_insee_data(url, region_name, max_retries=3, delay=2):
+    """Load and process INSEE CSV data from ZIP archive with retry logic"""
+    for attempt in range(max_retries):
+        try:
+            # Add delay between requests to avoid overwhelming the server
+            if attempt > 0:
+                time.sleep(delay * attempt)  # Exponential backoff
 
-        # Extract CSV from ZIP
-        with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
-            # Look for CSV files in the ZIP
-            csv_files = [f for f in zip_file.namelist() if f.endswith('.csv')]
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
 
-            if not csv_files:
-                st.error(f"No CSV files found in {region_name} data")
+            # Extract CSV from ZIP
+            with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
+                # Look for CSV files in the ZIP
+                csv_files = [f for f in zip_file.namelist() if f.endswith('.csv')]
+
+                if not csv_files:
+                    st.error(f"No CSV files found in {region_name} data")
+                    return None
+
+                # Read the main data file (usually valeurs_mensuelles.csv)
+                data_file = [f for f in csv_files if 'valeurs' in f.lower() or 'donnees' in f.lower()]
+                if not data_file:
+                    data_file = csv_files[0]  # Take first CSV if no specific data file found
+                else:
+                    data_file = data_file[0]
+
+                with zip_file.open(data_file) as csv_file:
+                    # Try different encodings and skip first 4 lines
+                    try:
+                        df = pd.read_csv(csv_file, encoding='utf-8', sep=';', skiprows=4, header=None)
+                    except UnicodeDecodeError:
+                        csv_file.seek(0)
+                        df = pd.read_csv(csv_file, encoding='latin-1', sep=';', skiprows=4, header=None)
+
+                    # Set proper column names based on the format: date, value, status
+                    if len(df.columns) >= 3:
+                        if "Hotels" in region_name:
+                            df.columns = ['Date', 'Hotel_Count', 'Status'] + [f'Col_{i}' for i in range(3, len(df.columns))]
+                            value_col = 'Hotel_Count'
+                        elif "Nights" in region_name:
+                            df.columns = ['Date', 'Hotel_Nights', 'Status'] + [f'Col_{i}' for i in range(3, len(df.columns))]
+                            value_col = 'Hotel_Nights'
+                        else:
+                            df.columns = ['Date', 'Occupancy_Rate', 'Status'] + [f'Col_{i}' for i in range(3, len(df.columns))]
+                            value_col = 'Occupancy_Rate'
+
+                        # Clean the data
+                        # Remove quotes from value and convert to float
+                        df[value_col] = df[value_col].astype(str).str.replace('"', '').str.replace(',', '.').astype(float)
+
+                        # Clean the date column and convert to datetime
+                        df['Date'] = df['Date'].astype(str).str.replace('"', '')
+                        # All data is now monthly format: YYYY-MM
+                        df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m', errors='coerce')
+
+                        # Clean status column
+                        df['Status'] = df['Status'].astype(str).str.replace('"', '')
+
+                        # Filter out rows with invalid dates or values
+                        df = df.dropna(subset=['Date', value_col])
+
+                        # Sort by date
+                        df = df.sort_values('Date')
+
+                    # Add region identifier
+                    df['Region'] = region_name
+                    return df
+
+        except Exception as e:
+            if attempt == max_retries - 1:  # Last attempt
+                st.error(f"Error loading data for {region_name} after {max_retries} attempts: {str(e)}")
                 return None
-
-            # Read the main data file (usually valeurs_mensuelles.csv)
-            data_file = [f for f in csv_files if 'valeurs' in f.lower() or 'donnees' in f.lower()]
-            if not data_file:
-                data_file = csv_files[0]  # Take first CSV if no specific data file found
             else:
-                data_file = data_file[0]
+                st.warning(f"Attempt {attempt + 1} failed for {region_name}, retrying...")
 
-            with zip_file.open(data_file) as csv_file:
-                # Try different encodings and skip first 4 lines
-                try:
-                    df = pd.read_csv(csv_file, encoding='utf-8', sep=';', skiprows=4, header=None)
-                except UnicodeDecodeError:
-                    csv_file.seek(0)
-                    df = pd.read_csv(csv_file, encoding='latin-1', sep=';', skiprows=4, header=None)
-
-                # Set proper column names based on the format: date, value, status
-                if len(df.columns) >= 3:
-                    if "Hotels" in region_name:
-                        df.columns = ['Date', 'Hotel_Count', 'Status'] + [f'Col_{i}' for i in range(3, len(df.columns))]
-                        value_col = 'Hotel_Count'
-                    elif "Nights" in region_name:
-                        df.columns = ['Date', 'Hotel_Nights', 'Status'] + [f'Col_{i}' for i in range(3, len(df.columns))]
-                        value_col = 'Hotel_Nights'
-                    else:
-                        df.columns = ['Date', 'Occupancy_Rate', 'Status'] + [f'Col_{i}' for i in range(3, len(df.columns))]
-                        value_col = 'Occupancy_Rate'
-
-                    # Clean the data
-                    # Remove quotes from value and convert to float
-                    df[value_col] = df[value_col].astype(str).str.replace('"', '').str.replace(',', '.').astype(float)
-
-                    # Clean the date column and convert to datetime
-                    df['Date'] = df['Date'].astype(str).str.replace('"', '')
-                    # All data is now monthly format: YYYY-MM
-                    df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m', errors='coerce')
-
-                    # Clean status column
-                    df['Status'] = df['Status'].astype(str).str.replace('"', '')
-
-                    # Filter out rows with invalid dates or values
-                    df = df.dropna(subset=['Date', value_col])
-
-                    # Sort by date
-                    df = df.sort_values('Date')
-
-                # Add region identifier
-                df['Region'] = region_name
-                return df
-
-    except Exception as e:
-        st.error(f"Error loading data for {region_name}: {str(e)}")
-        return None
+    return None
 
 @st.cache_data
 def get_hotel_data():
@@ -100,10 +118,20 @@ def get_hotel_data():
     marne_nights_nonresidents_url = f"https://bdm.insee.fr/series/010599247/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
 
     marne_data = load_insee_data(marne_url, "Marne")
+    time.sleep(1)  # Delay between requests
+
     france_data = load_insee_data(france_url, "France")
+    time.sleep(1)  # Delay between requests
+
     grand_est_hotels_data = load_insee_data(grand_est_hotels_url, "Grand Est Hotels")
+    time.sleep(1)  # Delay between requests
+
     marne_nights_total_data = load_insee_data(marne_nights_total_url, "Marne Nights Total")
+    time.sleep(1)  # Delay between requests
+
     marne_nights_residents_data = load_insee_data(marne_nights_residents_url, "Marne Nights Residents")
+    time.sleep(1)  # Delay between requests
+
     marne_nights_nonresidents_data = load_insee_data(marne_nights_nonresidents_url, "Marne Nights NonResidents")
 
     return marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data
