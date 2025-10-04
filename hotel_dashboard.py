@@ -261,7 +261,6 @@ def main():
                 title="Hotel Occupancy Rate Comparison: Marne vs France",
                 xaxis_title="Date",
                 yaxis_title="Occupancy Rate (%)",
-                hovermode='x unified',
                 height=500,
                 legend=dict(
                     yanchor="top",
@@ -270,6 +269,7 @@ def main():
                     x=0.01
                 )
             )
+            fig.update_layout(hovermode='x unified')
 
             st.plotly_chart(fig, width='stretch')
 
