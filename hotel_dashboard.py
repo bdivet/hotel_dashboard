@@ -368,7 +368,7 @@ def main():
     # Seasonal Decomposition Analysis
     # st.header("📈 Trend & Seasonal Analysis")
 
-    tab1, tab2, tab3 = st.tabs(["Seasonal Decomposition", "Monthly Patterns", "Hotel Nights (Yearly)"])
+    tab1, tab2, tab3 = st.tabs(["Seasonal Decomposition", "Monthly Patterns", "Hotel Nights"])
 
     with tab1:
         col1, col2 = st.columns(2)
@@ -706,7 +706,7 @@ def main():
             fig.update_layout(
                 title="Marne Hotel Nights: Total vs Residents vs Non-Residents",
                 xaxis_title="",
-                yaxis_title="Hotel Nights",
+                yaxis_title="Hotel Nights (x1,000)",
                 height=400,
                 margin=dict(t=60, b=40, l=40, r=40),
                 legend=dict(
@@ -747,25 +747,23 @@ def main():
 
             fig_pct = go.Figure()
 
-            # Stacked area chart
-            fig_pct.add_trace(go.Scatter(
+            # Side-by-side bar chart
+            fig_pct.add_trace(go.Bar(
                 x=breakdown_data['Date'],
                 y=breakdown_data['Residents_Pct'],
-                fill='tozeroy',
-                mode='none',
                 name='Residents',
-                fillcolor='rgba(162, 59, 114, 0.6)',
-                hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>'
+                marker_color='#A23B72',
+                hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
+                width=86400000 * 20  # Bar width in milliseconds (about 20 days)
             ))
 
-            fig_pct.add_trace(go.Scatter(
+            fig_pct.add_trace(go.Bar(
                 x=breakdown_data['Date'],
                 y=breakdown_data['NonResidents_Pct'],
-                fill='tonexty',
-                mode='none',
                 name='Non-Residents',
-                fillcolor='rgba(241, 143, 1, 0.6)',
-                hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>'
+                marker_color='#F18F01',
+                hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
+                width=86400000 * 20  # Bar width in milliseconds (about 20 days)
             ))
 
             fig_pct.update_layout(
@@ -775,6 +773,7 @@ def main():
                 height=300,
                 margin=dict(t=40, b=40, l=40, r=40),
                 yaxis=dict(range=[0, 100]),
+                barmode='group',
                 legend=dict(
                     yanchor="top",
                     y=0.99,
