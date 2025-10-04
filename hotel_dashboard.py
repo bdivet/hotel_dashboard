@@ -583,7 +583,7 @@ def main():
 
                     fig.update_layout(
                         title="Marne - Monthly Occupancy Distribution",
-                        xaxis_title="Month",
+                        # xaxis_title="Month",
                         yaxis_title="Occupancy Rate (%)",
                         height=320,
                         margin=dict(t=50, b=40, l=40, r=40),
@@ -592,7 +592,7 @@ def main():
 
                     fig2.update_layout(
                         title="France - Monthly Occupancy Distribution",
-                        xaxis_title="Month",
+                        # xaxis_title="Month",
                         yaxis_title="Occupancy Rate (%)",
                         height=320,
                         margin=dict(t=50, b=40, l=40, r=40),
@@ -620,18 +620,20 @@ def main():
 
                     fig.update_layout(
                         title="France - Monthly Occupancy Distribution",
-                        xaxis_title="Month",
+                        # xaxis_title="Month",
                         yaxis_title="Occupancy Rate (%)",
-                        height=400
+                        height=320,
+                        margin=dict(t=50, b=40, l=40, r=40)
                     )
                     st.plotly_chart(fig, width='stretch')
             else:
                 # Only Marne data
                 fig.update_layout(
                     title="Marne - Monthly Occupancy Distribution",
-                    xaxis_title="Month",
+                    # xaxis_title="Month",
                     yaxis_title="Occupancy Rate (%)",
-                    height=400
+                    height=320,
+                    margin=dict(t=50, b=40, l=40, r=40)
                 )
                 st.plotly_chart(fig, width='stretch')
 
