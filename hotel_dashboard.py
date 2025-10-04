@@ -188,7 +188,7 @@ def main():
 
                 fig.update_layout(
                     height=350,
-                    # xaxis_title="Date",
+                    xaxis_title="",
                     yaxis_title="Occupancy Rate (%)",
                     margin=dict(t=40, b=40, l=40, r=40)
                 )
@@ -224,7 +224,7 @@ def main():
 
                 fig.update_layout(
                     height=350,
-                    # xaxis_title="Date",
+                    xaxis_title="",
                     yaxis_title="Occupancy Rate (%)",
                     margin=dict(t=40, b=40, l=40, r=40)
                 )
@@ -264,7 +264,7 @@ def main():
 
             fig.update_layout(
                 title="Hotel Occupancy Rate Comparison: Marne vs France",
-                # xaxis_title="Date",
+                xaxis_title="",
                 yaxis_title="Occupancy Rate (%)",
                 height=400,
                 margin=dict(t=60, b=40, l=40, r=40),
@@ -316,7 +316,7 @@ def main():
 
             fig.update_layout(
                 height=350,
-                # xaxis_title="Date",
+                xaxis_title="",
                 yaxis_title="Number of Hotels",
                 margin=dict(t=40, b=40, l=40, r=40)
             )
@@ -391,7 +391,7 @@ def main():
                         fig.update_layout(
                             title="Marne: Original Data & Trend",
                             height=320,
-                            # xaxis_title="Date",
+                            xaxis_title="",
                             yaxis_title="Occupancy Rate (%)",
                             margin=dict(t=50, b=30, l=40, r=40)
                         )
@@ -476,7 +476,7 @@ def main():
                         fig.update_layout(
                             title="France: Original Data & Trend",
                             height=320,
-                            # xaxis_title="Date",
+                            xaxis_title="",
                             yaxis_title="Occupancy Rate (%)",
                             margin=dict(t=50, b=30, l=40, r=40)
                         )
@@ -583,7 +583,7 @@ def main():
 
                     fig.update_layout(
                         title="Marne - Monthly Occupancy Distribution",
-                        # xaxis_title="Month",
+                        xaxis_title="",
                         yaxis_title="Occupancy Rate (%)",
                         height=320,
                         margin=dict(t=50, b=40, l=40, r=40),
@@ -592,7 +592,7 @@ def main():
 
                     fig2.update_layout(
                         title="France - Monthly Occupancy Distribution",
-                        # xaxis_title="Month",
+                        xaxis_title="",
                         yaxis_title="Occupancy Rate (%)",
                         height=320,
                         margin=dict(t=50, b=40, l=40, r=40),
@@ -620,7 +620,7 @@ def main():
 
                     fig.update_layout(
                         title="France - Monthly Occupancy Distribution",
-                        # xaxis_title="Month",
+                        xaxis_title="",
                         yaxis_title="Occupancy Rate (%)",
                         height=320,
                         margin=dict(t=50, b=40, l=40, r=40)
@@ -630,7 +630,7 @@ def main():
                 # Only Marne data
                 fig.update_layout(
                     title="Marne - Monthly Occupancy Distribution",
-                    # xaxis_title="Month",
+                    xaxis_title="",
                     yaxis_title="Occupancy Rate (%)",
                     height=320,
                     margin=dict(t=50, b=40, l=40, r=40)
