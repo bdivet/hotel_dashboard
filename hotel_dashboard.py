@@ -673,23 +673,23 @@ def main():
             # Main combined chart
             fig = go.Figure()
 
-            # Add stacked bars for residents
-            fig.add_trace(go.Bar(
-                x=marne_nights_residents_processed['Date'],
-                y=marne_nights_residents_processed['Hotel_Nights'],
-                name='Residents',
-                marker_color='#A23B72',
-                hovertemplate='<b>Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
-                width=86400000 * 20  # Bar width in milliseconds (about 20 days)
-            ))
-
-            # Add stacked bars for non-residents
+            # Add stacked bars for non-residents (bottom layer - more stable)
             fig.add_trace(go.Bar(
                 x=marne_nights_nonresidents_processed['Date'],
                 y=marne_nights_nonresidents_processed['Hotel_Nights'],
                 name='Non-Residents',
                 marker_color='#F18F01',
                 hovertemplate='<b>Non-Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
+                width=86400000 * 20  # Bar width in milliseconds (about 20 days)
+            ))
+
+            # Add stacked bars for residents (top layer)
+            fig.add_trace(go.Bar(
+                x=marne_nights_residents_processed['Date'],
+                y=marne_nights_residents_processed['Hotel_Nights'],
+                name='Residents',
+                marker_color='#A23B72',
+                hovertemplate='<b>Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
                 width=86400000 * 20  # Bar width in milliseconds (about 20 days)
             ))
 
@@ -748,22 +748,22 @@ def main():
 
             fig_pct = go.Figure()
 
-            # Stacked bar chart for percentages
-            fig_pct.add_trace(go.Bar(
-                x=breakdown_data['Date'],
-                y=breakdown_data['Residents_Pct'],
-                name='Residents %',
-                marker_color='#A23B72',
-                hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
-                width=86400000 * 20  # Bar width in milliseconds (about 20 days)
-            ))
-
+            # Stacked bar chart for percentages (same order: NR bottom, Residents top)
             fig_pct.add_trace(go.Bar(
                 x=breakdown_data['Date'],
                 y=breakdown_data['NonResidents_Pct'],
                 name='Non-Residents %',
                 marker_color='#F18F01',
                 hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
+                width=86400000 * 20  # Bar width in milliseconds (about 20 days)
+            ))
+
+            fig_pct.add_trace(go.Bar(
+                x=breakdown_data['Date'],
+                y=breakdown_data['Residents_Pct'],
+                name='Residents %',
+                marker_color='#A23B72',
+                hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
                 width=86400000 * 20  # Bar width in milliseconds (about 20 days)
             ))
 
