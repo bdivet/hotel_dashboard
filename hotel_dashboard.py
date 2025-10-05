@@ -327,7 +327,7 @@ def main():
                     yaxis_title="Occupancy Rate (%)",
                     margin=dict(t=40, b=40, l=40, r=40)
                 )
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 st.error("Required columns (Date, Occupancy_Rate) not found in Marne data")
 
@@ -363,7 +363,7 @@ def main():
                     yaxis_title="Occupancy Rate (%)",
                     margin=dict(t=40, b=40, l=40, r=40)
                 )
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 st.error("Required columns (Date, Occupancy_Rate) not found in France data")
 
@@ -412,7 +412,7 @@ def main():
             )
             fig.update_layout(hovermode='x unified')
 
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
 
             # Add comparison metrics
             col1, col2, col3 = st.columns(3)
@@ -562,7 +562,7 @@ def main():
                     layout_update['yaxis'] = dict(range=shared_y_range_original)
 
                 fig.update_layout(**layout_update)
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
 
                 # Seasonal component
                 fig_seasonal = px.line(
@@ -578,7 +578,7 @@ def main():
                     seasonal_layout['yaxis'] = dict(range=shared_y_range_seasonal)
 
                 fig_seasonal.update_layout(**seasonal_layout)
-                st.plotly_chart(fig_seasonal, width='stretch')
+                st.plotly_chart(fig_seasonal, use_container_width=True)
             elif "Marne" in selected_regions:
                 st.info("Seasonal decomposition not available for Marne")
 
@@ -617,7 +617,7 @@ def main():
                     layout_update['yaxis'] = dict(range=shared_y_range_original)
 
                 fig.update_layout(**layout_update)
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
 
                 # Seasonal component
                 fig_seasonal = px.line(
@@ -633,7 +633,7 @@ def main():
                     seasonal_layout['yaxis'] = dict(range=shared_y_range_seasonal)
 
                 fig_seasonal.update_layout(**seasonal_layout)
-                st.plotly_chart(fig_seasonal, width='stretch')
+                st.plotly_chart(fig_seasonal, use_container_width=True)
             elif "France" in selected_regions:
                 st.info("Seasonal decomposition not available for France")
 
@@ -681,7 +681,7 @@ def main():
                             height=320,
                             margin=dict(t=50, b=40, l=40, r=40)
                         )
-                        st.plotly_chart(fig, width='stretch')
+                        st.plotly_chart(fig, use_container_width=True)
 
                     with col2:
                         # France analysis
@@ -709,7 +709,7 @@ def main():
                             height=320,
                             margin=dict(t=50, b=40, l=40, r=40)
                         )
-                        st.plotly_chart(fig2, width='stretch')
+                        st.plotly_chart(fig2, use_container_width=True)
 
                 elif "Marne" in selected_regions and marne_nights_total_processed is not None:
                     # Only Marne
@@ -737,7 +737,7 @@ def main():
                         height=320,
                         margin=dict(t=50, b=40, l=40, r=40)
                     )
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(fig, use_container_width=True)
 
                 elif "France" in selected_regions and france_nights_total_processed is not None:
                     # Only France
@@ -765,7 +765,7 @@ def main():
                         height=320,
                         margin=dict(t=50, b=40, l=40, r=40)
                     )
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("Hotel Nights data not available for selected regions")
 
@@ -848,10 +848,10 @@ def main():
 
                         col1, col2 = st.columns(2)
                         with col1:
-                            st.plotly_chart(fig, width='stretch')
+                            st.plotly_chart(fig, use_container_width=True)
 
                         with col2:
-                            st.plotly_chart(fig2, width='stretch')
+                            st.plotly_chart(fig2, use_container_width=True)
                     else:
                         # Only France data
                         for month in range(1, 13):
@@ -872,7 +872,7 @@ def main():
                             height=320,
                             margin=dict(t=50, b=40, l=40, r=40)
                         )
-                        st.plotly_chart(fig, width='stretch')
+                        st.plotly_chart(fig, use_container_width=True)
                 else:
                     # Only Marne data
                     fig.update_layout(
@@ -882,7 +882,7 @@ def main():
                         height=320,
                         margin=dict(t=50, b=40, l=40, r=40)
                     )
-                    st.plotly_chart(fig, width='stretch')
+                    st.plotly_chart(fig, use_container_width=True)
 
     with tab3:
         st.subheader("Marne Hotel Nights Breakdown")
@@ -942,7 +942,7 @@ def main():
                 hovermode='x unified'
             )
 
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
 
             # Marne metrics
             total_avg = marne_nights_total_processed['Hotel_Nights'].mean()
@@ -1000,7 +1000,7 @@ def main():
                 hovermode='x unified'
             )
 
-            st.plotly_chart(fig_pct, width='stretch')
+            st.plotly_chart(fig_pct, use_container_width=True)
 
             # Summary metrics for breakdown
             residents_pct_avg = breakdown_data['Residents_Pct'].mean()
@@ -1072,7 +1072,7 @@ def main():
                 hovermode='x unified'
             )
 
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
 
             # France metrics
             total_avg = france_nights_total_processed['Hotel_Nights'].mean()
@@ -1130,7 +1130,7 @@ def main():
                 hovermode='x unified'
             )
 
-            st.plotly_chart(fig_pct, width='stretch')
+            st.plotly_chart(fig_pct, use_container_width=True)
 
             # Summary metrics for breakdown
             residents_pct_avg = breakdown_data['Residents_Pct'].mean()
@@ -1226,7 +1226,7 @@ def main():
                 hovermode='x unified'
             )
 
-            st.plotly_chart(fig, width='stretch')
+            st.plotly_chart(fig, use_container_width=True)
 
             # Metrics
             total_avg = grand_est_nights_total_processed['Hotel_Nights'].mean()
@@ -1313,7 +1313,7 @@ def main():
                 hovermode='x unified'
             )
 
-            st.plotly_chart(fig_pct, width='stretch')
+            st.plotly_chart(fig_pct, use_container_width=True)
 
             # Average percentage shares
             non_rated_pct_avg = breakdown_data['NonRated_Pct'].mean()
@@ -1358,7 +1358,7 @@ def main():
                     yaxis_title="Number of Hotels",
                     margin=dict(t=40, b=40, l=40, r=40)
                 )
-                st.plotly_chart(fig, width='stretch')
+                st.plotly_chart(fig, use_container_width=True)
 
                 # Show trend information
                 recent_count = grand_est_hotels_processed['Hotel_Count'].iloc[-1]
