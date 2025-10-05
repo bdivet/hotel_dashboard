@@ -98,7 +98,7 @@ def load_insee_data(url, region_name, max_retries=3, delay=2):
         except Exception as e:
             if attempt == max_retries - 1:  # Last attempt
                 # Only show error on final failure, no warnings during retries
-                st.error(f"Error loading data for {region_name} after {max_retries} attempts: {str(e)}")
+                # st.error(f"Error loading data for {region_name} after {max_retries} attempts: {str(e)}")
                 return None
             # Don't show warnings for retry attempts - they clutter the UI
 
@@ -1332,7 +1332,7 @@ def main():
                 st.metric("4-5★ Share", f"{stars_4_5_pct_avg:.1f}%")
 
         else:
-            st.error("Grand Est rating breakdown data not available or missing required datasets")
+            st.info("Grand Est rating breakdown data is not yet available. This data is updated annually by INSEE.")
 
     with tab6:
         st.subheader("Grand Est - Number of Hotels Over Time")
