@@ -79,8 +79,12 @@ def load_insee_data(url, region_name, max_retries=3, delay=2):
 
                         # Clean the date column and convert to datetime
                         df['Date'] = df['Date'].astype(str).str.replace('"', '')
-                        # All data is now monthly format: YYYY-MM
-                        df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m', errors='coerce')
+                        # Try monthly format first (YYYY-MM), then annual format (YYYY)
+                        date_str = df['Date'].copy()
+                        df['Date'] = pd.to_datetime(date_str, format='%Y-%m', errors='coerce')
+                        # If all dates failed (annual data), try yearly format
+                        if df['Date'].isna().all():
+                            df['Date'] = pd.to_datetime(date_str, format='%Y', errors='coerce')
 
                         # Clean status column
                         df['Status'] = df['Status'].astype(str).str.replace('"', '')
