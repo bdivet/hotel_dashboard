@@ -97,10 +97,10 @@ def load_insee_data(url, region_name, max_retries=3, delay=2):
 
         except Exception as e:
             if attempt == max_retries - 1:  # Last attempt
+                # Only show error on final failure, no warnings during retries
                 st.error(f"Error loading data for {region_name} after {max_retries} attempts: {str(e)}")
                 return None
-            else:
-                st.warning(f"Attempt {attempt + 1} failed for {region_name}, retrying...")
+            # Don't show warnings for retry attempts - they clutter the UI
 
     return None
 
@@ -119,6 +119,13 @@ def get_hotel_data():
     france_nights_total_url = f"https://bdm.insee.fr/series/010598614/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
     france_nights_residents_url = f"https://bdm.insee.fr/series/010598615/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
     france_nights_nonresidents_url = f"https://bdm.insee.fr/series/010598616/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin={current_month}&anneeFin={current_year}&revision=sansrevisions"
+
+    # Grand Est hotel nights by rating (annual data)
+    grand_est_nights_total_url = "https://bdm.insee.fr/series/010606637/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin=1&anneeFin=2024&revision=sansrevisions"
+    grand_est_nights_1_2_stars_url = "https://bdm.insee.fr/series/010606679/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin=1&anneeFin=2024&revision=sansrevisions"
+    grand_est_nights_3_stars_url = "https://bdm.insee.fr/series/010606721/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin=1&anneeFin=2024&revision=sansrevisions"
+    grand_est_nights_4_5_stars_url = "https://bdm.insee.fr/series/010606763/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin=1&anneeFin=2024&revision=sansrevisions"
+    grand_est_nights_non_rated_url = "https://bdm.insee.fr/series/010606811/csv?lang=fr&ordre=antechronologique&transposition=donneescolonne&periodeDebut=1&anneeDebut=2011&periodeFin=1&anneeFin=2024&revision=sansrevisions"
 
     marne_data = load_insee_data(marne_url, "Marne")
     time.sleep(1)  # Delay between requests
@@ -145,8 +152,23 @@ def get_hotel_data():
     time.sleep(1)  # Delay between requests
 
     france_nights_nonresidents_data = load_insee_data(france_nights_nonresidents_url, "France Nights NonResidents")
+    time.sleep(1)  # Delay between requests
 
-    return marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data, france_nights_total_data, france_nights_residents_data, france_nights_nonresidents_data
+    grand_est_nights_total_data = load_insee_data(grand_est_nights_total_url, "Grand Est Nights Total")
+    time.sleep(1)  # Delay between requests
+
+    grand_est_nights_1_2_stars_data = load_insee_data(grand_est_nights_1_2_stars_url, "Grand Est Nights 1-2 Stars")
+    time.sleep(1)  # Delay between requests
+
+    grand_est_nights_3_stars_data = load_insee_data(grand_est_nights_3_stars_url, "Grand Est Nights 3 Stars")
+    time.sleep(1)  # Delay between requests
+
+    grand_est_nights_4_5_stars_data = load_insee_data(grand_est_nights_4_5_stars_url, "Grand Est Nights 4-5 Stars")
+    time.sleep(1)  # Delay between requests
+
+    grand_est_nights_non_rated_data = load_insee_data(grand_est_nights_non_rated_url, "Grand Est Nights Non-Rated")
+
+    return marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data, france_nights_total_data, france_nights_residents_data, france_nights_nonresidents_data, grand_est_nights_total_data, grand_est_nights_1_2_stars_data, grand_est_nights_3_stars_data, grand_est_nights_4_5_stars_data, grand_est_nights_non_rated_data
 
 def process_data(df):
     """Process and clean the data - data is already processed in load_insee_data"""
@@ -162,9 +184,9 @@ def main():
 
     # Load data
     with st.spinner("Loading hotel frequency data..."):
-        marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data, france_nights_total_data, france_nights_residents_data, france_nights_nonresidents_data = get_hotel_data()
+        marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data, france_nights_total_data, france_nights_residents_data, france_nights_nonresidents_data, grand_est_nights_total_data, grand_est_nights_1_2_stars_data, grand_est_nights_3_stars_data, grand_est_nights_4_5_stars_data, grand_est_nights_non_rated_data = get_hotel_data()
 
-    if all(data is None for data in [marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data, france_nights_total_data, france_nights_residents_data, france_nights_nonresidents_data]):
+    if all(data is None for data in [marne_data, france_data, grand_est_hotels_data, marne_nights_total_data, marne_nights_residents_data, marne_nights_nonresidents_data, france_nights_total_data, france_nights_residents_data, france_nights_nonresidents_data, grand_est_nights_total_data, grand_est_nights_1_2_stars_data, grand_est_nights_3_stars_data, grand_est_nights_4_5_stars_data, grand_est_nights_non_rated_data]):
         st.error("Failed to load data from all sources. Please check the URLs and try again.")
         return
 
@@ -213,6 +235,31 @@ def main():
         france_nights_nonresidents_processed = process_data(france_nights_nonresidents_data)
     else:
         france_nights_nonresidents_processed = None
+
+    if grand_est_nights_total_data is not None:
+        grand_est_nights_total_processed = process_data(grand_est_nights_total_data)
+    else:
+        grand_est_nights_total_processed = None
+
+    if grand_est_nights_1_2_stars_data is not None:
+        grand_est_nights_1_2_stars_processed = process_data(grand_est_nights_1_2_stars_data)
+    else:
+        grand_est_nights_1_2_stars_processed = None
+
+    if grand_est_nights_3_stars_data is not None:
+        grand_est_nights_3_stars_processed = process_data(grand_est_nights_3_stars_data)
+    else:
+        grand_est_nights_3_stars_processed = None
+
+    if grand_est_nights_4_5_stars_data is not None:
+        grand_est_nights_4_5_stars_processed = process_data(grand_est_nights_4_5_stars_data)
+    else:
+        grand_est_nights_4_5_stars_processed = None
+
+    if grand_est_nights_non_rated_data is not None:
+        grand_est_nights_non_rated_processed = process_data(grand_est_nights_non_rated_data)
+    else:
+        grand_est_nights_non_rated_processed = None
 
     # Sidebar for controls
     st.sidebar.header("Dashboard Controls")
@@ -384,54 +431,10 @@ def main():
         else:
             st.error("Required data columns not found for comparison")
 
-    # Grand Est Hotels Count
-    if grand_est_hotels_processed is not None:
-        # st.header("🏨 Number of Hotels in Grand Est Region")
-
-        if 'Date' in grand_est_hotels_processed.columns and 'Hotel_Count' in grand_est_hotels_processed.columns:
-            avg_count = grand_est_hotels_processed['Hotel_Count'].mean()
-
-            fig = px.line(grand_est_hotels_processed,
-                         x='Date',
-                         y='Hotel_Count',
-                         title="Grand Est - Number of Hotels Over Time",
-                         color_discrete_sequence=['#2ca02c'])
-
-            # Add horizontal average line
-            fig.add_hline(y=avg_count, line_dash="dash", line_color="red",
-                         annotation_text=f"Avg: {avg_count:.0f} hotels",
-                         annotation_position="top right")
-
-            fig.update_layout(
-                height=350,
-                xaxis_title="",
-                yaxis_title="Number of Hotels",
-                margin=dict(t=40, b=40, l=40, r=40)
-            )
-            st.plotly_chart(fig, width='stretch')
-
-            # Show trend information
-            recent_count = grand_est_hotels_processed['Hotel_Count'].iloc[-1]
-            initial_count = grand_est_hotels_processed['Hotel_Count'].iloc[0]
-            trend = "📈 Increasing" if recent_count > initial_count else "📉 Decreasing" if recent_count < initial_count else "➡️ Stable"
-
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Current Hotels", f"{recent_count:.0f}")
-            with col2:
-                st.metric("Average", f"{avg_count:.0f}")
-            with col3:
-                st.metric("Initial Count", f"{initial_count:.0f}")
-            with col4:
-                st.metric("Trend", trend)
-
-        else:
-            st.error("Required columns (Date, Hotel_Count) not found in Grand Est hotels data")
-
     # Seasonal Decomposition Analysis
     # st.header("📈 Trend & Seasonal Analysis")
 
-    tab1, tab2, tab3 = st.tabs(["Seasonal Decomposition", "Monthly Patterns", "Hotel Nights Breakdown"])
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Seasonal Decomposition", "Monthly Patterns", "Marne Hotel Nights", "France Hotel Nights", "Grand Est by Rating", "Grand Est Hotels Count"])
 
     with tab1:
         st.subheader(f"Seasonal Decomposition - {analysis_type}")
@@ -443,147 +446,196 @@ def main():
             else:
                 return region_processed, 'Occupancy_Rate', 'Occupancy Rate (%)'
 
+        # Calculate shared y-axis range for occupancy rates if both regions are selected
+        shared_y_range_original = None
+        shared_y_range_seasonal = None
+
+        if analysis_type == "Occupancy Rate (%)" and "Marne" in selected_regions and "France" in selected_regions:
+            if marne_processed is not None and france_processed is not None:
+                # For original data and trend
+                marne_min = marne_processed['Occupancy_Rate'].min()
+                marne_max = marne_processed['Occupancy_Rate'].max()
+                france_min = france_processed['Occupancy_Rate'].min()
+                france_max = france_processed['Occupancy_Rate'].max()
+                all_min = min(marne_min, france_min)
+                all_max = max(marne_max, france_max)
+                shared_y_range_original = [all_min - 2, all_max + 2]
+
+                # For seasonal component - will be calculated after decomposition
+                # We'll store the seasonal component ranges and calculate later
+
+        # Store decomposition results for shared y-axis calculation
+        marne_decomposition = None
+        france_decomposition = None
+        marne_ts_data = None
+        france_ts_data = None
+
+        # First pass: compute decompositions
+        if "Marne" in selected_regions:
+            if analysis_type == "Hotel Nights":
+                data_source = marne_nights_total_processed
+                value_col = 'Hotel_Nights'
+            else:
+                data_source = marne_processed
+                value_col = 'Occupancy_Rate'
+
+            if data_source is not None and len(data_source) > 24:
+                try:
+                    ts_data = data_source.set_index('Date')[value_col].dropna()
+                    ts_data = ts_data.asfreq('MS')
+                    ts_data = ts_data.interpolate(method='linear')
+                    ts_data = ts_data.fillna(ts_data.mean())
+
+                    if len(ts_data) > 24:
+                        marne_decomposition = seasonal_decompose(ts_data, model='additive', period=12)
+                        marne_ts_data = ts_data
+                except:
+                    pass
+
+        if "France" in selected_regions:
+            if analysis_type == "Hotel Nights":
+                data_source = france_nights_total_processed
+                value_col = 'Hotel_Nights'
+            else:
+                data_source = france_processed
+                value_col = 'Occupancy_Rate'
+
+            if data_source is not None and len(data_source) > 24:
+                try:
+                    ts_data = data_source.set_index('Date')[value_col].dropna()
+                    ts_data = ts_data.asfreq('MS')
+                    ts_data = ts_data.interpolate(method='linear')
+                    ts_data = ts_data.fillna(ts_data.mean())
+
+                    if len(ts_data) > 24:
+                        france_decomposition = seasonal_decompose(ts_data, model='additive', period=12)
+                        france_ts_data = ts_data
+                except:
+                    pass
+
+        # Calculate shared seasonal y-axis range for occupancy rates
+        shared_y_range_seasonal = None
+        if analysis_type == "Occupancy Rate (%)" and marne_decomposition is not None and france_decomposition is not None:
+            marne_seasonal_min = marne_decomposition.seasonal.values.min()
+            marne_seasonal_max = marne_decomposition.seasonal.values.max()
+            france_seasonal_min = france_decomposition.seasonal.values.min()
+            france_seasonal_max = france_decomposition.seasonal.values.max()
+            seasonal_min = min(marne_seasonal_min, france_seasonal_min)
+            seasonal_max = max(marne_seasonal_max, france_seasonal_max)
+            shared_y_range_seasonal = [seasonal_min - 0.5, seasonal_max + 0.5]
+
+        # Second pass: display charts with shared y-axis
         col1, col2 = st.columns(2)
 
         with col1:
-            if "Marne" in selected_regions:
+            if "Marne" in selected_regions and marne_decomposition is not None:
                 if analysis_type == "Hotel Nights":
-                    data_source = marne_nights_total_processed
-                    value_col = 'Hotel_Nights'
                     y_label = 'Hotel Nights (thousands)'
                     region_name = "Marne"
                 else:
-                    data_source = marne_processed
-                    value_col = 'Occupancy_Rate'
                     y_label = 'Occupancy Rate (%)'
                     region_name = "Marne"
 
-                if data_source is not None and len(data_source) > 24:
-                    st.subheader(f"{region_name} - Seasonal Decomposition")
-                    try:
-                        # Prepare data for seasonal decomposition
-                        ts_data = data_source.set_index('Date')[value_col].dropna()
-                        ts_data = ts_data.asfreq('MS')  # Monthly start frequency
+                st.subheader(f"{region_name} - Seasonal Decomposition")
 
-                        # Fill missing values with interpolation
-                        ts_data = ts_data.interpolate(method='linear')
-                        ts_data = ts_data.fillna(ts_data.mean())
+                # Original data and trend
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=marne_ts_data.index, y=marne_ts_data.values,
+                    mode='lines', name='Original',
+                    line=dict(color='#1f77b4')
+                ))
+                fig.add_trace(go.Scatter(
+                    x=marne_decomposition.trend.index, y=marne_decomposition.trend.values,
+                    mode='lines', name='Trend',
+                    line=dict(color='red', width=2)
+                ))
 
-                        if len(ts_data) > 24:  # Need at least 2 years for seasonal decomposition
-                            decomposition = seasonal_decompose(ts_data, model='additive', period=12)
+                layout_update = dict(
+                    title=f"Marne: Original Data & Trend ({analysis_type})",
+                    height=320,
+                    xaxis_title="",
+                    yaxis_title=y_label,
+                    margin=dict(t=50, b=30, l=40, r=40)
+                )
+                if shared_y_range_original is not None:
+                    layout_update['yaxis'] = dict(range=shared_y_range_original)
 
-                            # Create subplots for decomposition
-                            fig = go.Figure()
+                fig.update_layout(**layout_update)
+                st.plotly_chart(fig, width='stretch')
 
-                            # Original data
-                            fig.add_trace(go.Scatter(
-                                x=ts_data.index, y=ts_data.values,
-                                mode='lines', name='Original',
-                                line=dict(color='#1f77b4')
-                            ))
+                # Seasonal component
+                fig_seasonal = px.line(
+                    x=marne_decomposition.seasonal.index,
+                    y=marne_decomposition.seasonal.values,
+                    title="Marne - Seasonal Component"
+                )
+                seasonal_layout = dict(
+                    height=250,
+                    margin=dict(t=40, b=30, l=40, r=40)
+                )
+                if shared_y_range_seasonal is not None:
+                    seasonal_layout['yaxis'] = dict(range=shared_y_range_seasonal)
 
-                            # Trend
-                            fig.add_trace(go.Scatter(
-                                x=decomposition.trend.index, y=decomposition.trend.values,
-                                mode='lines', name='Trend',
-                                line=dict(color='red', width=2)
-                            ))
-
-                            fig.update_layout(
-                                title=f"Marne: Original Data & Trend ({analysis_type})",
-                                height=320,
-                                xaxis_title="",
-                                yaxis_title=y_label,
-                                margin=dict(t=50, b=30, l=40, r=40)
-                            )
-
-                            st.plotly_chart(fig, width='stretch')
-
-                            # Seasonal component
-                            fig_seasonal = px.line(
-                                x=decomposition.seasonal.index,
-                                y=decomposition.seasonal.values,
-                                title="Marne - Seasonal Component"
-                            )
-
-                            fig_seasonal.update_layout(
-                                height=250,
-                                margin=dict(t=40, b=30, l=40, r=40)
-                            )
-                            st.plotly_chart(fig_seasonal, width='stretch')
-
-                    except Exception as e:
-                        st.info(f"Seasonal decomposition not available for Marne: {str(e)}")
+                fig_seasonal.update_layout(**seasonal_layout)
+                st.plotly_chart(fig_seasonal, width='stretch')
+            elif "Marne" in selected_regions:
+                st.info("Seasonal decomposition not available for Marne")
 
         with col2:
-            if "France" in selected_regions:
+            if "France" in selected_regions and france_decomposition is not None:
                 if analysis_type == "Hotel Nights":
-                    data_source = france_nights_total_processed
-                    value_col = 'Hotel_Nights'
                     y_label = 'Hotel Nights (thousands)'
                     region_name = "France"
                 else:
-                    data_source = france_processed
-                    value_col = 'Occupancy_Rate'
                     y_label = 'Occupancy Rate (%)'
                     region_name = "France"
 
-                    if data_source is not None and len(data_source) > 24:
-                        st.subheader(f"{region_name} - Seasonal Decomposition")
-                        try:
-                            # Prepare data for seasonal decomposition
-                            ts_data = data_source.set_index('Date')[value_col].dropna()
-                            ts_data = ts_data.asfreq('MS')  # Monthly start frequency
+                st.subheader(f"{region_name} - Seasonal Decomposition")
 
-                            # Fill missing values with interpolation
-                            ts_data = ts_data.interpolate(method='linear')
-                            ts_data = ts_data.fillna(ts_data.mean())
+                # Original data and trend
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=france_ts_data.index, y=france_ts_data.values,
+                    mode='lines', name='Original',
+                    line=dict(color='#ff7f0e')
+                ))
+                fig.add_trace(go.Scatter(
+                    x=france_decomposition.trend.index, y=france_decomposition.trend.values,
+                    mode='lines', name='Trend',
+                    line=dict(color='red', width=2)
+                ))
 
-                            if len(ts_data) > 24:  # Need at least 2 years for seasonal decomposition
-                                decomposition = seasonal_decompose(ts_data, model='additive', period=12)
+                layout_update = dict(
+                    title=f"France: Original Data & Trend ({analysis_type})",
+                    height=320,
+                    xaxis_title="",
+                    yaxis_title=y_label,
+                    margin=dict(t=50, b=30, l=40, r=40)
+                )
+                if shared_y_range_original is not None:
+                    layout_update['yaxis'] = dict(range=shared_y_range_original)
 
-                                # Create subplots for decomposition
-                                fig = go.Figure()
+                fig.update_layout(**layout_update)
+                st.plotly_chart(fig, width='stretch')
 
-                                # Original data
-                                fig.add_trace(go.Scatter(
-                                    x=ts_data.index, y=ts_data.values,
-                                    mode='lines', name='Original',
-                                    line=dict(color='#ff7f0e')
-                                ))
+                # Seasonal component
+                fig_seasonal = px.line(
+                    x=france_decomposition.seasonal.index,
+                    y=france_decomposition.seasonal.values,
+                    title="France - Seasonal Component"
+                )
+                seasonal_layout = dict(
+                    height=250,
+                    margin=dict(t=40, b=30, l=40, r=40)
+                )
+                if shared_y_range_seasonal is not None:
+                    seasonal_layout['yaxis'] = dict(range=shared_y_range_seasonal)
 
-                                # Trend
-                                fig.add_trace(go.Scatter(
-                                    x=decomposition.trend.index, y=decomposition.trend.values,
-                                    mode='lines', name='Trend',
-                                    line=dict(color='red', width=2)
-                                ))
-
-                                fig.update_layout(
-                                    title=f"France: Original Data & Trend ({analysis_type})",
-                                    height=320,
-                                    xaxis_title="",
-                                    yaxis_title=y_label,
-                                    margin=dict(t=50, b=30, l=40, r=40)
-                                )
-
-                                st.plotly_chart(fig, width='stretch')
-
-                                # Seasonal component
-                                fig_seasonal = px.line(
-                                    x=decomposition.seasonal.index,
-                                    y=decomposition.seasonal.values,
-                                    title="France - Seasonal Component"
-                                )
-
-                                fig_seasonal.update_layout(
-                                    height=250,
-                                    margin=dict(t=40, b=30, l=40, r=40)
-                                )
-                                st.plotly_chart(fig_seasonal, width='stretch')
-
-                        except Exception as e:
-                            st.info(f"Seasonal decomposition not available for France: {str(e)}")
+                fig_seasonal.update_layout(**seasonal_layout)
+                st.plotly_chart(fig_seasonal, width='stretch')
+            elif "France" in selected_regions:
+                st.info("Seasonal decomposition not available for France")
 
     with tab2:
         st.subheader(f"Monthly Patterns Across Years - {analysis_type}")
@@ -833,143 +885,15 @@ def main():
                     st.plotly_chart(fig, width='stretch')
 
     with tab3:
-        st.subheader("Hotel Nights Breakdown - Monthly Analysis")
+        st.subheader("Marne Hotel Nights Breakdown")
 
-        # Check if we have datasets for Marne or France
+        # Check if we have datasets for Marne
         marne_available = (marne_nights_total_processed is not None and
                           marne_nights_residents_processed is not None and
                           marne_nights_nonresidents_processed is not None)
 
-        france_available = (france_nights_total_processed is not None and
-                           france_nights_residents_processed is not None and
-                           france_nights_nonresidents_processed is not None)
-
-        if marne_available and france_available:
-            # Show both regions side by side
-            col1, col2 = st.columns(2)
-
-            with col1:
-                st.subheader("Marne Hotel Nights")
-
-            with col2:
-                st.subheader("France Hotel Nights")
-
-        elif marne_available:
-            st.subheader("Marne Hotel Nights")
-
-        elif france_available:
-            st.subheader("France Hotel Nights")
-
-        if marne_available and france_available:
-            # Both regions available - show side by side
-            col1, col2 = st.columns(2)
-
-            with col1:
-                # Marne chart
-                fig = go.Figure()
-
-                # Add stacked bars for non-residents (bottom layer - more stable)
-                fig.add_trace(go.Bar(
-                    x=marne_nights_nonresidents_processed['Date'],
-                    y=marne_nights_nonresidents_processed['Hotel_Nights'],
-                    name='Non-Residents',
-                    marker_color='#F18F01',
-                    hovertemplate='<b>Non-Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
-                    width=86400000 * 20  # Bar width in milliseconds (about 20 days)
-                ))
-
-                # Add stacked bars for residents (top layer)
-                fig.add_trace(go.Bar(
-                    x=marne_nights_residents_processed['Date'],
-                    y=marne_nights_residents_processed['Hotel_Nights'],
-                    name='Residents',
-                    marker_color='#A23B72',
-                    hovertemplate='<b>Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
-                    width=86400000 * 20  # Bar width in milliseconds (about 20 days)
-                ))
-
-                # Add total line
-                fig.add_trace(go.Scatter(
-                    x=marne_nights_total_processed['Date'],
-                    y=marne_nights_total_processed['Hotel_Nights'],
-                    mode='lines',
-                    name='Total',
-                    line=dict(color='#2E86AB', width=3),
-                    hovertemplate='<b>Total</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>'
-                ))
-
-                fig.update_layout(
-                    title="Marne Hotel Nights: Total Line & Stacked Components",
-                    xaxis_title="",
-                    yaxis_title="Hotel Nights (thousands)",
-                    height=400,
-                    margin=dict(t=60, b=40, l=40, r=40),
-                    barmode='stack',
-                    legend=dict(
-                        yanchor="top",
-                        y=0.99,
-                        xanchor="left",
-                        x=0.01
-                    ),
-                    hovermode='x unified'
-                )
-
-                st.plotly_chart(fig, width='stretch')
-
-            with col2:
-                # France chart
-                fig2 = go.Figure()
-
-                # Add stacked bars for non-residents (bottom layer - more stable)
-                fig2.add_trace(go.Bar(
-                    x=france_nights_nonresidents_processed['Date'],
-                    y=france_nights_nonresidents_processed['Hotel_Nights'],
-                    name='Non-Residents',
-                    marker_color='#F18F01',
-                    hovertemplate='<b>Non-Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
-                    width=86400000 * 20  # Bar width in milliseconds (about 20 days)
-                ))
-
-                # Add stacked bars for residents (top layer)
-                fig2.add_trace(go.Bar(
-                    x=france_nights_residents_processed['Date'],
-                    y=france_nights_residents_processed['Hotel_Nights'],
-                    name='Residents',
-                    marker_color='#A23B72',
-                    hovertemplate='<b>Residents</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>',
-                    width=86400000 * 20  # Bar width in milliseconds (about 20 days)
-                ))
-
-                # Add total line
-                fig2.add_trace(go.Scatter(
-                    x=france_nights_total_processed['Date'],
-                    y=france_nights_total_processed['Hotel_Nights'],
-                    mode='lines',
-                    name='Total',
-                    line=dict(color='#2E86AB', width=3),
-                    hovertemplate='<b>Total</b><br>%{y:,.0f} nights<br>%{x}<extra></extra>'
-                ))
-
-                fig2.update_layout(
-                    title="France Hotel Nights: Total Line & Stacked Components",
-                    xaxis_title="",
-                    yaxis_title="Hotel Nights (thousands)",
-                    height=400,
-                    margin=dict(t=60, b=40, l=40, r=40),
-                    barmode='stack',
-                    legend=dict(
-                        yanchor="top",
-                        y=0.99,
-                        xanchor="left",
-                        x=0.01
-                    ),
-                    hovermode='x unified'
-                )
-
-                st.plotly_chart(fig2, width='stretch')
-
-        elif marne_available:
-            # Only Marne available
+        if marne_available:
+            # Marne chart
             fig = go.Figure()
 
             # Add stacked bars for non-residents (bottom layer - more stable)
@@ -1020,8 +944,86 @@ def main():
 
             st.plotly_chart(fig, width='stretch')
 
-        elif france_available:
-            # Only France available
+            # Marne metrics
+            total_avg = marne_nights_total_processed['Hotel_Nights'].mean()
+            residents_avg = marne_nights_residents_processed['Hotel_Nights'].mean()
+            nonresidents_avg = marne_nights_nonresidents_processed['Hotel_Nights'].mean()
+
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Avg", f"{total_avg:,.0f}")
+            with col2:
+                st.metric("Residents Avg", f"{residents_avg:,.0f}")
+            with col3:
+                st.metric("Non-Residents Avg", f"{nonresidents_avg:,.0f}")
+
+            # Marne percentage breakdown
+            st.subheader("Residents vs Non-Residents Breakdown")
+
+            breakdown_data = pd.DataFrame({
+                'Date': marne_nights_total_processed['Date'],
+                'Residents_Pct': (marne_nights_residents_processed['Hotel_Nights'] /
+                                 marne_nights_total_processed['Hotel_Nights'] * 100),
+                'NonResidents_Pct': (marne_nights_nonresidents_processed['Hotel_Nights'] /
+                                    marne_nights_total_processed['Hotel_Nights'] * 100)
+            })
+
+            fig_pct = go.Figure()
+
+            fig_pct.add_trace(go.Bar(
+                x=breakdown_data['Date'],
+                y=breakdown_data['NonResidents_Pct'],
+                name='Non-Residents %',
+                marker_color='#F18F01',
+                hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
+                width=86400000 * 20
+            ))
+
+            fig_pct.add_trace(go.Bar(
+                x=breakdown_data['Date'],
+                y=breakdown_data['Residents_Pct'],
+                name='Residents %',
+                marker_color='#A23B72',
+                hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
+                width=86400000 * 20
+            ))
+
+            fig_pct.update_layout(
+                title="Percentage Breakdown: Residents vs Non-Residents",
+                xaxis_title="",
+                yaxis_title="Percentage (%)",
+                height=300,
+                margin=dict(t=40, b=40, l=40, r=40),
+                yaxis=dict(range=[0, 100]),
+                barmode='stack',
+                legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+                hovermode='x unified'
+            )
+
+            st.plotly_chart(fig_pct, width='stretch')
+
+            # Summary metrics for breakdown
+            residents_pct_avg = breakdown_data['Residents_Pct'].mean()
+            nonresidents_pct_avg = breakdown_data['NonResidents_Pct'].mean()
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Residents Share", f"{residents_pct_avg:.1f}%")
+            with col2:
+                st.metric("Non-Residents Share", f"{nonresidents_pct_avg:.1f}%")
+        else:
+            st.error("Marne hotel nights data not available or missing required datasets")
+
+    with tab4:
+        st.subheader("France Hotel Nights Breakdown")
+
+        # Check if we have datasets for France
+        france_available = (france_nights_total_processed is not None and
+                           france_nights_residents_processed is not None and
+                           france_nights_nonresidents_processed is not None)
+
+        if france_available:
+            # France chart
             fig = go.Figure()
 
             # Add stacked bars for non-residents (bottom layer - more stable)
@@ -1072,55 +1074,7 @@ def main():
 
             st.plotly_chart(fig, width='stretch')
 
-        # Show metrics for the available region(s)
-        if marne_available and france_available:
-            # Side-by-side metrics for both regions
-            col1, col2 = st.columns(2)
-
-            with col1:
-                st.subheader("Marne Metrics")
-                marne_total_avg = marne_nights_total_processed['Hotel_Nights'].mean()
-                marne_residents_avg = marne_nights_residents_processed['Hotel_Nights'].mean()
-                marne_nonresidents_avg = marne_nights_nonresidents_processed['Hotel_Nights'].mean()
-
-                col1a, col1b, col1c = st.columns(3)
-                with col1a:
-                    st.metric("Total Avg", f"{marne_total_avg:,.0f}")
-                with col1b:
-                    st.metric("Residents Avg", f"{marne_residents_avg:,.0f}")
-                with col1c:
-                    st.metric("Non-Residents Avg", f"{marne_nonresidents_avg:,.0f}")
-
-            with col2:
-                st.subheader("France Metrics")
-                france_total_avg = france_nights_total_processed['Hotel_Nights'].mean()
-                france_residents_avg = france_nights_residents_processed['Hotel_Nights'].mean()
-                france_nonresidents_avg = france_nights_nonresidents_processed['Hotel_Nights'].mean()
-
-                col2a, col2b, col2c = st.columns(3)
-                with col2a:
-                    st.metric("Total Avg", f"{france_total_avg:,.0f}")
-                with col2b:
-                    st.metric("Residents Avg", f"{france_residents_avg:,.0f}")
-                with col2c:
-                    st.metric("Non-Residents Avg", f"{france_nonresidents_avg:,.0f}")
-
-        elif marne_available:
-            # Marne metrics only
-            total_avg = marne_nights_total_processed['Hotel_Nights'].mean()
-            residents_avg = marne_nights_residents_processed['Hotel_Nights'].mean()
-            nonresidents_avg = marne_nights_nonresidents_processed['Hotel_Nights'].mean()
-
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Total Avg", f"{total_avg:,.0f}")
-            with col2:
-                st.metric("Residents Avg", f"{residents_avg:,.0f}")
-            with col3:
-                st.metric("Non-Residents Avg", f"{nonresidents_avg:,.0f}")
-
-        elif france_available:
-            # France metrics only
+            # France metrics
             total_avg = france_nights_total_processed['Hotel_Nights'].mean()
             residents_avg = france_nights_residents_processed['Hotel_Nights'].mean()
             nonresidents_avg = france_nights_nonresidents_processed['Hotel_Nights'].mean()
@@ -1133,177 +1087,7 @@ def main():
             with col3:
                 st.metric("Non-Residents Avg", f"{nonresidents_avg:,.0f}")
 
-        # Percentage breakdown charts
-        if marne_available and france_available:
-            st.subheader("Residents vs Non-Residents Breakdown")
-            col1, col2 = st.columns(2)
-
-            with col1:
-                # Marne percentage breakdown
-                marne_breakdown_data = pd.DataFrame({
-                    'Date': marne_nights_total_processed['Date'],
-                    'Residents_Pct': (marne_nights_residents_processed['Hotel_Nights'] /
-                                     marne_nights_total_processed['Hotel_Nights'] * 100),
-                    'NonResidents_Pct': (marne_nights_nonresidents_processed['Hotel_Nights'] /
-                                        marne_nights_total_processed['Hotel_Nights'] * 100)
-                })
-
-                fig_pct = go.Figure()
-
-                fig_pct.add_trace(go.Bar(
-                    x=marne_breakdown_data['Date'],
-                    y=marne_breakdown_data['NonResidents_Pct'],
-                    name='Non-Residents %',
-                    marker_color='#F18F01',
-                    hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
-                    width=86400000 * 20
-                ))
-
-                fig_pct.add_trace(go.Bar(
-                    x=marne_breakdown_data['Date'],
-                    y=marne_breakdown_data['Residents_Pct'],
-                    name='Residents %',
-                    marker_color='#A23B72',
-                    hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
-                    width=86400000 * 20
-                ))
-
-                fig_pct.update_layout(
-                    title="Marne: Residents vs Non-Residents %",
-                    xaxis_title="",
-                    yaxis_title="Percentage (%)",
-                    height=300,
-                    margin=dict(t=40, b=40, l=40, r=40),
-                    yaxis=dict(range=[0, 100]),
-                    barmode='stack',
-                    legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
-                    hovermode='x unified'
-                )
-
-                st.plotly_chart(fig_pct, width='stretch')
-
-                # Marne percentage metrics
-                marne_residents_pct_avg = marne_breakdown_data['Residents_Pct'].mean()
-                marne_nonresidents_pct_avg = marne_breakdown_data['NonResidents_Pct'].mean()
-
-                col1a, col1b = st.columns(2)
-                with col1a:
-                    st.metric("Residents Share", f"{marne_residents_pct_avg:.1f}%")
-                with col1b:
-                    st.metric("Non-Residents Share", f"{marne_nonresidents_pct_avg:.1f}%")
-
-            with col2:
-                # France percentage breakdown
-                france_breakdown_data = pd.DataFrame({
-                    'Date': france_nights_total_processed['Date'],
-                    'Residents_Pct': (france_nights_residents_processed['Hotel_Nights'] /
-                                     france_nights_total_processed['Hotel_Nights'] * 100),
-                    'NonResidents_Pct': (france_nights_nonresidents_processed['Hotel_Nights'] /
-                                        france_nights_total_processed['Hotel_Nights'] * 100)
-                })
-
-                fig_pct2 = go.Figure()
-
-                fig_pct2.add_trace(go.Bar(
-                    x=france_breakdown_data['Date'],
-                    y=france_breakdown_data['NonResidents_Pct'],
-                    name='Non-Residents %',
-                    marker_color='#F18F01',
-                    hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
-                    width=86400000 * 20
-                ))
-
-                fig_pct2.add_trace(go.Bar(
-                    x=france_breakdown_data['Date'],
-                    y=france_breakdown_data['Residents_Pct'],
-                    name='Residents %',
-                    marker_color='#A23B72',
-                    hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
-                    width=86400000 * 20
-                ))
-
-                fig_pct2.update_layout(
-                    title="France: Residents vs Non-Residents %",
-                    xaxis_title="",
-                    yaxis_title="Percentage (%)",
-                    height=300,
-                    margin=dict(t=40, b=40, l=40, r=40),
-                    yaxis=dict(range=[0, 100]),
-                    barmode='stack',
-                    legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
-                    hovermode='x unified'
-                )
-
-                st.plotly_chart(fig_pct2, width='stretch')
-
-                # France percentage metrics
-                france_residents_pct_avg = france_breakdown_data['Residents_Pct'].mean()
-                france_nonresidents_pct_avg = france_breakdown_data['NonResidents_Pct'].mean()
-
-                col2a, col2b = st.columns(2)
-                with col2a:
-                    st.metric("Residents Share", f"{france_residents_pct_avg:.1f}%")
-                with col2b:
-                    st.metric("Non-Residents Share", f"{france_nonresidents_pct_avg:.1f}%")
-
-        elif marne_available:
-            # Marne only breakdown
-            st.subheader("Residents vs Non-Residents Breakdown")
-
-            breakdown_data = pd.DataFrame({
-                'Date': marne_nights_total_processed['Date'],
-                'Residents_Pct': (marne_nights_residents_processed['Hotel_Nights'] /
-                                 marne_nights_total_processed['Hotel_Nights'] * 100),
-                'NonResidents_Pct': (marne_nights_nonresidents_processed['Hotel_Nights'] /
-                                    marne_nights_total_processed['Hotel_Nights'] * 100)
-            })
-
-            fig_pct = go.Figure()
-
-            fig_pct.add_trace(go.Bar(
-                x=breakdown_data['Date'],
-                y=breakdown_data['NonResidents_Pct'],
-                name='Non-Residents %',
-                marker_color='#F18F01',
-                hovertemplate='<b>Non-Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
-                width=86400000 * 20
-            ))
-
-            fig_pct.add_trace(go.Bar(
-                x=breakdown_data['Date'],
-                y=breakdown_data['Residents_Pct'],
-                name='Residents %',
-                marker_color='#A23B72',
-                hovertemplate='<b>Residents</b><br>%{y:.1f}%<br>%{x}<extra></extra>',
-                width=86400000 * 20
-            ))
-
-            fig_pct.update_layout(
-                title="Percentage Breakdown: Residents vs Non-Residents (Stacked)",
-                xaxis_title="",
-                yaxis_title="Percentage (%)",
-                height=300,
-                margin=dict(t=40, b=40, l=40, r=40),
-                yaxis=dict(range=[0, 100]),
-                barmode='stack',
-                legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
-                hovermode='x unified'
-            )
-
-            st.plotly_chart(fig_pct, width='stretch')
-
-            # Summary metrics for breakdown
-            residents_pct_avg = breakdown_data['Residents_Pct'].mean()
-            nonresidents_pct_avg = breakdown_data['NonResidents_Pct'].mean()
-
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Residents Share", f"{residents_pct_avg:.1f}%")
-            with col2:
-                st.metric("Non-Residents Share", f"{nonresidents_pct_avg:.1f}%")
-
-        elif france_available:
-            # France only breakdown
+            # France percentage breakdown
             st.subheader("Residents vs Non-Residents Breakdown")
 
             breakdown_data = pd.DataFrame({
@@ -1335,7 +1119,7 @@ def main():
             ))
 
             fig_pct.update_layout(
-                title="Percentage Breakdown: Residents vs Non-Residents (Stacked)",
+                title="Percentage Breakdown: Residents vs Non-Residents",
                 xaxis_title="",
                 yaxis_title="Percentage (%)",
                 height=300,
@@ -1357,9 +1141,244 @@ def main():
                 st.metric("Residents Share", f"{residents_pct_avg:.1f}%")
             with col2:
                 st.metric("Non-Residents Share", f"{nonresidents_pct_avg:.1f}%")
+        else:
+            st.error("France hotel nights data not available or missing required datasets")
+
+    with tab5:
+        st.subheader("Grand Est Hotel Nights by Rating (Annual Data)")
+
+        # Check if we have all Grand Est rating datasets
+        grand_est_rating_available = (grand_est_nights_total_processed is not None and
+                                      grand_est_nights_1_2_stars_processed is not None and
+                                      grand_est_nights_3_stars_processed is not None and
+                                      grand_est_nights_4_5_stars_processed is not None and
+                                      grand_est_nights_non_rated_processed is not None)
+
+        if grand_est_rating_available:
+            # Create stacked bar chart with rating breakdown
+            fig = go.Figure()
+
+            # Add stacked bars for each rating category
+            # Non-rated (bottom)
+            fig.add_trace(go.Bar(
+                x=grand_est_nights_non_rated_processed['Date'],
+                y=grand_est_nights_non_rated_processed['Hotel_Nights'],
+                name='Non-Rated',
+                marker_color='#CCCCCC',
+                hovertemplate='<b>Non-Rated</b><br>%{y:,.0f} nights<br>%{x|%Y}<extra></extra>',
+                width=86400000 * 200  # Wider bars for annual data
+            ))
+
+            # 1-2 Stars
+            fig.add_trace(go.Bar(
+                x=grand_est_nights_1_2_stars_processed['Date'],
+                y=grand_est_nights_1_2_stars_processed['Hotel_Nights'],
+                name='1-2 Stars',
+                marker_color='#FFB84D',
+                hovertemplate='<b>1-2 Stars</b><br>%{y:,.0f} nights<br>%{x|%Y}<extra></extra>',
+                width=86400000 * 200
+            ))
+
+            # 3 Stars
+            fig.add_trace(go.Bar(
+                x=grand_est_nights_3_stars_processed['Date'],
+                y=grand_est_nights_3_stars_processed['Hotel_Nights'],
+                name='3 Stars',
+                marker_color='#4CAF50',
+                hovertemplate='<b>3 Stars</b><br>%{y:.1f} nights<br>%{x|%Y}<extra></extra>',
+                width=86400000 * 200
+            ))
+
+            # 4-5 Stars (top)
+            fig.add_trace(go.Bar(
+                x=grand_est_nights_4_5_stars_processed['Date'],
+                y=grand_est_nights_4_5_stars_processed['Hotel_Nights'],
+                name='4-5 Stars',
+                marker_color='#9C27B0',
+                hovertemplate='<b>4-5 Stars</b><br>%{y:,.0f} nights<br>%{x|%Y}<extra></extra>',
+                width=86400000 * 200
+            ))
+
+            # Add total line
+            fig.add_trace(go.Scatter(
+                x=grand_est_nights_total_processed['Date'],
+                y=grand_est_nights_total_processed['Hotel_Nights'],
+                mode='lines+markers',
+                name='Total',
+                line=dict(color='#2E86AB', width=3),
+                marker=dict(size=8),
+                hovertemplate='<b>Total</b><br>%{y:,.0f} nights<br>%{x|%Y}<extra></extra>'
+            ))
+
+            fig.update_layout(
+                title="Grand Est Hotel Nights by Rating: Total Line & Stacked Components",
+                xaxis_title="",
+                yaxis_title="Hotel Nights (thousands)",
+                height=450,
+                margin=dict(t=60, b=40, l=40, r=40),
+                barmode='stack',
+                legend=dict(
+                    yanchor="top",
+                    y=0.99,
+                    xanchor="left",
+                    x=0.01
+                ),
+                hovermode='x unified'
+            )
+
+            st.plotly_chart(fig, width='stretch')
+
+            # Metrics
+            total_avg = grand_est_nights_total_processed['Hotel_Nights'].mean()
+            stars_1_2_avg = grand_est_nights_1_2_stars_processed['Hotel_Nights'].mean()
+            stars_3_avg = grand_est_nights_3_stars_processed['Hotel_Nights'].mean()
+            stars_4_5_avg = grand_est_nights_4_5_stars_processed['Hotel_Nights'].mean()
+            non_rated_avg = grand_est_nights_non_rated_processed['Hotel_Nights'].mean()
+
+            col1, col2, col3, col4, col5 = st.columns(5)
+            with col1:
+                st.metric("Total Avg", f"{total_avg:,.0f}")
+            with col2:
+                st.metric("1-2★ Avg", f"{stars_1_2_avg:,.0f}")
+            with col3:
+                st.metric("3★ Avg", f"{stars_3_avg:,.0f}")
+            with col4:
+                st.metric("4-5★ Avg", f"{stars_4_5_avg:,.0f}")
+            with col5:
+                st.metric("Non-Rated Avg", f"{non_rated_avg:,.0f}")
+
+            # Percentage breakdown
+            st.subheader("Rating Distribution Over Time")
+
+            breakdown_data = pd.DataFrame({
+                'Date': grand_est_nights_total_processed['Date'],
+                'NonRated_Pct': (grand_est_nights_non_rated_processed['Hotel_Nights'] /
+                                grand_est_nights_total_processed['Hotel_Nights'] * 100),
+                'Stars_1_2_Pct': (grand_est_nights_1_2_stars_processed['Hotel_Nights'] /
+                                 grand_est_nights_total_processed['Hotel_Nights'] * 100),
+                'Stars_3_Pct': (grand_est_nights_3_stars_processed['Hotel_Nights'] /
+                               grand_est_nights_total_processed['Hotel_Nights'] * 100),
+                'Stars_4_5_Pct': (grand_est_nights_4_5_stars_processed['Hotel_Nights'] /
+                                 grand_est_nights_total_processed['Hotel_Nights'] * 100)
+            })
+
+            fig_pct = go.Figure()
+
+            # Stacked percentage bars
+            fig_pct.add_trace(go.Bar(
+                x=breakdown_data['Date'],
+                y=breakdown_data['NonRated_Pct'],
+                name='Non-Rated %',
+                marker_color='#CCCCCC',
+                hovertemplate='<b>Non-Rated</b><br>%{y:.1f}%<br>%{x|%Y}<extra></extra>',
+                width=86400000 * 200
+            ))
+
+            fig_pct.add_trace(go.Bar(
+                x=breakdown_data['Date'],
+                y=breakdown_data['Stars_1_2_Pct'],
+                name='1-2 Stars %',
+                marker_color='#FFB84D',
+                hovertemplate='<b>1-2 Stars</b><br>%{y:.1f}%<br>%{x|%Y}<extra></extra>',
+                width=86400000 * 200
+            ))
+
+            fig_pct.add_trace(go.Bar(
+                x=breakdown_data['Date'],
+                y=breakdown_data['Stars_3_Pct'],
+                name='3 Stars %',
+                marker_color='#4CAF50',
+                hovertemplate='<b>3 Stars</b><br>%{y:.1f}%<br>%{x|%Y}<extra></extra>',
+                width=86400000 * 200
+            ))
+
+            fig_pct.add_trace(go.Bar(
+                x=breakdown_data['Date'],
+                y=breakdown_data['Stars_4_5_Pct'],
+                name='4-5 Stars %',
+                marker_color='#9C27B0',
+                hovertemplate='<b>4-5 Stars</b><br>%{y:.1f}%<br>%{x|%Y}<extra></extra>',
+                width=86400000 * 200
+            ))
+
+            fig_pct.update_layout(
+                title="Percentage Distribution by Rating",
+                xaxis_title="",
+                yaxis_title="Percentage (%)",
+                height=350,
+                margin=dict(t=40, b=40, l=40, r=40),
+                yaxis=dict(range=[0, 100]),
+                barmode='stack',
+                legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+                hovermode='x unified'
+            )
+
+            st.plotly_chart(fig_pct, width='stretch')
+
+            # Average percentage shares
+            non_rated_pct_avg = breakdown_data['NonRated_Pct'].mean()
+            stars_1_2_pct_avg = breakdown_data['Stars_1_2_Pct'].mean()
+            stars_3_pct_avg = breakdown_data['Stars_3_Pct'].mean()
+            stars_4_5_pct_avg = breakdown_data['Stars_4_5_Pct'].mean()
+
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Non-Rated Share", f"{non_rated_pct_avg:.1f}%")
+            with col2:
+                st.metric("1-2★ Share", f"{stars_1_2_pct_avg:.1f}%")
+            with col3:
+                st.metric("3★ Share", f"{stars_3_pct_avg:.1f}%")
+            with col4:
+                st.metric("4-5★ Share", f"{stars_4_5_pct_avg:.1f}%")
 
         else:
-            st.error("Hotel nights data not available or missing required datasets")
+            st.error("Grand Est rating breakdown data not available or missing required datasets")
+
+    with tab6:
+        st.subheader("Grand Est - Number of Hotels Over Time")
+
+        if grand_est_hotels_processed is not None:
+            if 'Date' in grand_est_hotels_processed.columns and 'Hotel_Count' in grand_est_hotels_processed.columns:
+                avg_count = grand_est_hotels_processed['Hotel_Count'].mean()
+
+                fig = px.line(grand_est_hotels_processed,
+                             x='Date',
+                             y='Hotel_Count',
+                             title="Grand Est - Number of Hotels Over Time",
+                             color_discrete_sequence=['#2ca02c'])
+
+                # Add horizontal average line
+                fig.add_hline(y=avg_count, line_dash="dash", line_color="red",
+                             annotation_text=f"Avg: {avg_count:.0f} hotels",
+                             annotation_position="top right")
+
+                fig.update_layout(
+                    height=400,
+                    xaxis_title="",
+                    yaxis_title="Number of Hotels",
+                    margin=dict(t=40, b=40, l=40, r=40)
+                )
+                st.plotly_chart(fig, width='stretch')
+
+                # Show trend information
+                recent_count = grand_est_hotels_processed['Hotel_Count'].iloc[-1]
+                initial_count = grand_est_hotels_processed['Hotel_Count'].iloc[0]
+                trend = "📈 Increasing" if recent_count > initial_count else "📉 Decreasing" if recent_count < initial_count else "➡️ Stable"
+
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Current Hotels", f"{recent_count:.0f}")
+                with col2:
+                    st.metric("Average", f"{avg_count:.0f}")
+                with col3:
+                    st.metric("Initial Count", f"{initial_count:.0f}")
+                with col4:
+                    st.metric("Trend", trend)
+
+            else:
+                st.error("Required columns (Date, Hotel_Count) not found in Grand Est hotels data")
+        else:
+            st.error("Grand Est hotels data not available")
 
     # Add data toggle in sidebar for advanced users
     if st.sidebar.checkbox("Show Raw Data (Advanced)", value=False):
@@ -1367,11 +1386,29 @@ def main():
 
         if "Marne" in selected_regions and marne_processed is not None:
             st.subheader("Marne Data")
-            st.dataframe(marne_processed, width='stretch')
+            # Prepare display dataframe
+            display_df = marne_processed.copy()
+            # Convert date to last day of month
+            display_df['Date'] = pd.to_datetime(display_df['Date']) + pd.offsets.MonthEnd(0)
+            # Format as YYYY-MM-DD
+            display_df['Date'] = display_df['Date'].dt.strftime('%Y-%m-%d')
+            # Remove Region column if it exists
+            if 'Region' in display_df.columns:
+                display_df = display_df.drop(columns=['Region'])
+            st.dataframe(display_df, width='stretch')
 
         if "France" in selected_regions and france_processed is not None:
             st.subheader("France Data")
-            st.dataframe(france_processed, width='stretch')
+            # Prepare display dataframe
+            display_df = france_processed.copy()
+            # Convert date to last day of month
+            display_df['Date'] = pd.to_datetime(display_df['Date']) + pd.offsets.MonthEnd(0)
+            # Format as YYYY-MM-DD
+            display_df['Date'] = display_df['Date'].dt.strftime('%Y-%m-%d')
+            # Remove Region column if it exists
+            if 'Region' in display_df.columns:
+                display_df = display_df.drop(columns=['Region'])
+            st.dataframe(display_df, width='stretch')
 
     # Footer
     st.markdown("---")
